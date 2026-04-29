@@ -1,0 +1,54 @@
+**HEADER
+RELEASE   Release of TYDEX-format                 1.3
+MEASID    Measurement id                          MF-Tool example tiretransfer_axi_half
+SUPPLIER  Data supplier                           Siemens
+DATE      Date                                    14 Oct 2025
+CLCKTIME  Clocktime                               08:54 am IST
+
+**COMMENTS
+Copyright 2021 Siemens Digital Industries Software
+Simcenter Tire
+
+**CONSTANTS
+NOMWIDTH  Nominal section width of tire m         0.235
+ASPRATIO  Nominal aspect ratio          %         45
+RIMDIAME  Nominal rim diameter          m         0.0550
+RIMWIDTH  Rim width                     m         0.0660
+MANUFACT  Manufacturer                            Siemens
+IDENTITY  Identity                                MF-Tool example tire
+LOADIND   Load index                              94
+SPEEDSYM  Speed symbol                            W
+TYWHASSB  Tire/wheel assembly                     refswright
+TYREMASS  Tire mass                     kg        11.6
+TRCKSURF  Surface of track                        120 3Mite
+TRCKCOND  Condition of track surface              dry
+LONGVEL   Longitudinal velocity         m/s       21.39
+INFLPRES  Inflation pressure            Pa        75842
+FZW       Vertical force                N         5260
+SLIPANGL  Slip angle                    rad       0.0000
+INCLANGL  Inclination angle             rad       0.0000
+
+**MEASURCHANNELS
+MEASNUMB  Measurement point No.         -         1         0         0
+SLIPANGL  Slip angle                    rad       1         0         0
+INCLANGL  Inclination angle             rad       1         0         0
+LONGSLIP  Longitudinal slip             -         1         0         0
+FX        Longitudinal force            N         1         0         0
+FYW       Lateral force                 N         1         0         0
+FZW       Vertical force                N         1         0         0
+MXW       Overturning moment            Nm        1         0         0
+MZW       Aligning moment               Nm        1         0         0
+
+**MEASURDATA 9
+
+**MODELPARAMETERS 7
+FITLEVEL  MF-Tool fit level key word              FXYCOMB; MZCOMB
+FZ_NOM    Tire nominal vertical load    N         5260
+NOMPRES   Tire nominal infl. pressure   Pa        250000
+RFREE     Unloaded radius               m         0.3226
+TYROTIN   Tire rot. inertia about YC    kgm2      1.0380
+TYRESTIN  Tire steer inertia about ZC   kgm2      0.6340
+MBELT     Mass belt                     kg        8.70
+
+**MODELEND
+**END

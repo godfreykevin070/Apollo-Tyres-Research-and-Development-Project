@@ -1,0 +1,655 @@
+1
+
+   Abaqus 2024.HF5                                  Date 14-Oct-2025   Time 14:30:01
+   For use by APOLLO TYRES LTD under license from Dassault Systemes or its subsidiary.
+
+
+
+                         The Abaqus Software is a product of:
+
+                           Dassault Systemes Americas Corp.
+                           1301 Atwood Avenue, Suite 101W
+                              Johnston, RI 02919, USA
+ 
+
+
+                   The Abaqus Software is available only under license
+                   from Dassault Systemes or its subsidiary and may be
+                   used or reproduced only in accordance with the terms
+                   of such license.
+ 
+                          On machine 1040SIMW13 
+                          you are authorized to run
+                          Abaqus/Standard until 29-Sep-2026
+
+                          Your site id is: 200000000009793 
+
+
+ 
+                    For assistance or any other information you may
+                    obtain contact information for your local office
+                    from the world wide web at:
+
+                      https://www.3ds.com/products-services/simulia/services-support/
+
+ 
+                * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+                *                                                         * 
+                *                   *****************                     * 
+                *                   *  N O T I C E  *                     * 
+                *                   *****************                     * 
+                *                                                         * 
+                *                                                         * 
+                *                     Abaqus 2024.HF5                     * 
+                *                                                         * 
+                *       BUILD ID: 2024_09_25-22.49.41 RELr426 191541      * 
+                *                                                         * 
+                *                                                         * 
+                *  Please make sure you are using                         * 
+                *  release Abaqus 2024.HF5 manuals                        * 
+                *  plus the notes accompanying this release.              * 
+                *                                                         * 
+                *                                                         * 
+                *                                                         * 
+                *                                                         * 
+                * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+
+
+ 
+
+
+
+     PROCESSING PART, INSTANCE, AND ASSEMBLY INFORMATION
+   *******************************************************
+
+
+     END PROCESSING PART, INSTANCE, AND ASSEMBLY INFORMATION
+   ***********************************************************
+
+1
+
+   Abaqus 2024.HF5                                  Date 14-Oct-2025   Time 14:30:02
+   For use by APOLLO TYRES LTD under license from Dassault Systemes or its subsidiary.
+
+                                                                                     
+
+                                      P A R A M E T E R   I N T E R P R E T A T I O N
+
+
+                     
+                     ***COMMENT: STARTING PARAMETER EVALUATION
+                     
+                     ***ERROR:   INCORRECT SYNTAX
+     LINE     5                   >>> 2deg_RP1=speed*cos2
+                     
+                     ***ERROR:   INCORRECT SYNTAX
+                                  >>> 2deg_RP2=speed*sin2
+                     
+     LINE    10      ***ERROR:   INCORRECT SYNTAX
+                                  >>> 4deg_RP1=speed*cos4
+                     
+                     ***ERROR:   INCORRECT SYNTAX
+                                  >>> 4deg_RP2=speed*sin4
+     LINE    15      
+                     ***ERROR:   INCORRECT SYNTAX
+                                  >>> 6deg_RP1=speed*cos6
+                     
+                     ***ERROR:   INCORRECT SYNTAX
+     LINE    20                   >>> 6deg_RP2=speed*sin6
+                     
+                     ***ERROR:   INCORRECT SYNTAX
+                                  >>> 8deg_RP1=speed*cos8
+                     
+     LINE    25      ***ERROR:   INCORRECT SYNTAX
+                                  >>> 8deg_RP2=speed*sin8
+                     
+                     ***ERROR:   INCORRECT SYNTAX
+                                  >>> 10deg_RP1=speed*cos10
+     LINE    30      
+                     ***ERROR:   INCORRECT SYNTAX
+                                  >>> 10deg_RP2=speed*sin10
+                     
+                     ***ERROR:   INCORRECT SYNTAX
+     LINE    35                   >>> 12deg_RP1=speed*cos12
+                     
+                     ***ERROR:   INCORRECT SYNTAX
+                                  >>> 12deg_RP2=speed*sin12
+                     
+     LINE    40      ***ERROR:   INCORRECT SYNTAX
+                                  >>> 14deg_RP1=speed*cos14
+                     
+                     ***ERROR:   INCORRECT SYNTAX
+                                  >>> 14deg_RP2=speed*sin14
+     LINE    45      
+                     ***ERROR:   INCORRECT SYNTAX
+                                  >>> 16deg_RP1=speed*cos16
+                     
+                     ***ERROR:   INCORRECT SYNTAX
+     LINE    50                   >>> 16deg_RP2=speed*sin16
+                     
+                     ***ERROR:   EVALUATION OF PARAMETERS FAILED
+                     
+                     ***COMMENT: STARTING PARAMETER SUBSTITUTION
+     LINE    55      
+                     ***COMMENT: EVALUATION AND SUBSTITUTION OF PARAMETERS COMPLETED
+                    --------------------------------------------------------------------------------
+                        5   10   15   20   25   30   35   40   45   50   55   60   65   70   75   80
+                    --------------------------------------------------------------------------------
+
+
+
+     OPTIONS BEING PROCESSED
+   ***************************
+
+
+  *HEADING
+          axi symmetric                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   
+  *Include, input=Hyperelastic_2.0_0425_rubber_mod.inc, password=apolloatr
+  *HEADING
+          Project name:                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   
+  *HEADING
+          lift equation                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   
+  *ELEMENT,TYPE=SFMGAX1,ELSET=BELT1_REINFORCEMENT
+  *ELEMENT,TYPE=SFMGAX1,ELSET=BELT2_REINFORCEMENT
+  *ELEMENT,TYPE=SFMGAX1,ELSET=CAPPLY1_REINFORCEMENT
+  *ELEMENT,TYPE=SFMGAX1,ELSET=PLY1_REINFORCEMENT
+  *ELEMENT,TYPE=SFMGAX1,ELSET=PLY2_REINFORCEMENT
+  *ELEMENT,TYPE=CGAX3H,ELSET=APEX
+  *ELEMENT,TYPE=CGAX3H,ELSET=BASE
+  *ELEMENT,TYPE=CGAX3H,ELSET=CAPPLY1
+  *ELEMENT,TYPE=CGAX3H,ELSET=PLY2
+  *ELEMENT,TYPE=CGAX3H,ELSET=RIMCUSHION
+  *ELEMENT,TYPE=CGAX3H,ELSET=SIDEWALL
+  *ELEMENT,TYPE=CGAX3H,ELSET=TREAD
+  *ELEMENT,TYPE=CGAX3H,ELSET=WINGTIP
+  *ELEMENT,TYPE=CGAX4H,ELSET=APEX
+  *ELEMENT,TYPE=CGAX4H,ELSET=BASE
+  *ELEMENT,TYPE=CGAX4H,ELSET=BEAD
+  *ELEMENT,TYPE=CGAX4H,ELSET=BELT1
+  *ELEMENT,TYPE=CGAX4H,ELSET=BELT2
+  *ELEMENT,TYPE=CGAX4H,ELSET=CAPPLY1
+  *ELEMENT,TYPE=CGAX4H,ELSET=INNERLINER
+  *ELEMENT,TYPE=CGAX4H,ELSET=PLY1
+  *ELEMENT,TYPE=CGAX4H,ELSET=PLY2
+  *ELEMENT,TYPE=CGAX4H,ELSET=RIMCUSHION
+  *ELEMENT,TYPE=CGAX4H,ELSET=SIDEWALL
+  *ELEMENT,TYPE=CGAX4H,ELSET=TREAD
+  *ELEMENT,TYPE=CGAX4H,ELSET=WINGTIP
+  *ELSET, ELSET=WHOLE_REINFORCEMENT, GENERATE
+  *ELSET, ELSET=WHOLE_RUBBER, GENERATE
+  *ELSET, ELSET = _UPPER_RIM_SLAVE_SURFACE_S2
+  *ELSET, ELSET = _UPPER_RIM_SLAVE_SURFACE_S3
+  *ELSET, ELSET = _UPPER_RIM_SLAVE_SURFACE_S4
+  *ELSET, ELSET = _GROOVE1_SLAVE_SURFACE_S2
+  *ELSET, ELSET = _GROOVE1_MASTER_SURFACE_S1
+  *ELSET, ELSET = _LOWER_RIM_SLAVE_SURFACE_S1
+  *ELSET, ELSET = _LOWER_RIM_SLAVE_SURFACE_S2
+  *ELSET, ELSET = _LOWER_RIM_SLAVE_SURFACE_S3
+  *ELSET, ELSET = _GROOVE2_SLAVE_SURFACE_S3
+  *ELSET, ELSET = _GROOVE2_MASTER_SURFACE_S1
+  *ELSET, ELSET = _GROOVE3_SLAVE_SURFACE_S3
+  *ELSET, ELSET = _GROOVE3_MASTER_SURFACE_S2
+  *ELSET, ELSET = _INNER_PRESSURE_SURFACE_S1
+  *ELSET, ELSET = _INNER_PRESSURE_SURFACE_S2
+  *ELSET, ELSET = _INNER_PRESSURE_SURFACE_S3
+  *ELSET, ELSET = _INNER_PRESSURE_SURFACE_S4
+  *ELSET, ELSET = _TREAD_TOP_SURFACE_S1
+  *ELSET, ELSET = _TREAD_TOP_SURFACE_S2
+  *ELSET, ELSET = _TREAD_TOP_SURFACE_S3
+  *ELSET, ELSET = _TREAD_TOP_SURFACE_S4
+
+ ***WARNING: THE PARAMETER POISSON HAS BEEN SET TO A VALUE 0.30000 SMALLER THAN 
+             0.4. YOU MIGHT PREFER USING THE *HYPERFOAM OPTION
+
+ ***WARNING: THE PARAMETER POISSON HAS BEEN SET TO A VALUE 0.30000 SMALLER THAN 
+             0.4. YOU MIGHT PREFER USING THE *HYPERFOAM OPTION
+
+ ***WARNING: THE PARAMETER POISSON HAS BEEN SET TO A VALUE 0.30000 SMALLER THAN 
+             0.4. YOU MIGHT PREFER USING THE *HYPERFOAM OPTION
+
+ ***WARNING: THE PARAMETER POISSON HAS BEEN SET TO A VALUE 0.30000 SMALLER THAN 
+             0.4. YOU MIGHT PREFER USING THE *HYPERFOAM OPTION
+
+ ***WARNING: THE PARAMETER POISSON HAS BEEN SET TO A VALUE 0.30000 SMALLER THAN 
+             0.4. YOU MIGHT PREFER USING THE *HYPERFOAM OPTION
+
+ ***WARNING: THE PARAMETER POISSON HAS BEEN SET TO A VALUE 0.30000 SMALLER THAN 
+             0.4. YOU MIGHT PREFER USING THE *HYPERFOAM OPTION
+
+ ***WARNING: THE PARAMETER POISSON HAS BEEN SET TO A VALUE 0.30000 SMALLER THAN 
+             0.4. YOU MIGHT PREFER USING THE *HYPERFOAM OPTION
+
+ ***WARNING: THE PARAMETER POISSON HAS BEEN SET TO A VALUE 0.30000 SMALLER THAN 
+             0.4. YOU MIGHT PREFER USING THE *HYPERFOAM OPTION
+
+ ***WARNING: THE PARAMETER POISSON HAS BEEN SET TO A VALUE 0.30000 SMALLER THAN 
+             0.4. YOU MIGHT PREFER USING THE *HYPERFOAM OPTION
+
+ ***WARNING: THE PARAMETER POISSON HAS BEEN SET TO A VALUE 0.30000 SMALLER THAN 
+             0.4. YOU MIGHT PREFER USING THE *HYPERFOAM OPTION
+
+ ***WARNING: THE PARAMETER POISSON HAS BEEN SET TO A VALUE 0.30000 SMALLER THAN 
+             0.4. YOU MIGHT PREFER USING THE *HYPERFOAM OPTION
+
+ ***WARNING: THE PARAMETER POISSON HAS BEEN SET TO A VALUE 0.30000 SMALLER THAN 
+             0.4. YOU MIGHT PREFER USING THE *HYPERFOAM OPTION
+  *INITIAL CONDITIONS, TYPE=TEMPERATURE
+  *SOLID SECTION, ELSET=BEAD, MATERIAL=BEAD_STEEL
+  *SOLID SECTION, ELSET=INNERLINER, MATERIAL=L14
+  *SOLID SECTION, ELSET=RIMCUSHION, MATERIAL=R48
+  *SOLID SECTION, ELSET=SIDEWALL, MATERIAL=XZ5008
+  *SOLID SECTION, ELSET=APEX, MATERIAL=A270
+  *SOLID SECTION, ELSET=TREAD, MATERIAL=ST498
+  *SOLID SECTION, ELSET=BASE, MATERIAL=XT4004
+  *SOLID SECTION, ELSET=PLY1, MATERIAL=B174
+  *SOLID SECTION, ELSET=PLY2, MATERIAL=B174
+  *SOLID SECTION, ELSET=BELT1, MATERIAL=B168
+  *SOLID SECTION, ELSET=BELT2, MATERIAL=B168
+  *SOLID SECTION, ELSET=CAPPLY1, MATERIAL=B160
+  *SOLID SECTION, ELSET=WINGTIP, MATERIAL=XT3128
+  *SOLID SECTION, ELSET=BEAD, MATERIAL=BEAD_STEEL
+  *SOLID SECTION, ELSET=INNERLINER, MATERIAL=L14
+  *SOLID SECTION, ELSET=RIMCUSHION, MATERIAL=R48
+  *SOLID SECTION, ELSET=SIDEWALL, MATERIAL=XZ5008
+  *SOLID SECTION, ELSET=APEX, MATERIAL=A270
+  *SOLID SECTION, ELSET=TREAD, MATERIAL=ST498
+  *SOLID SECTION, ELSET=BASE, MATERIAL=XT4004
+  *SOLID SECTION, ELSET=PLY1, MATERIAL=B174
+  *SOLID SECTION, ELSET=PLY2, MATERIAL=B174
+  *SOLID SECTION, ELSET=BELT1, MATERIAL=B168
+  *SOLID SECTION, ELSET=BELT2, MATERIAL=B168
+  *SOLID SECTION, ELSET=CAPPLY1, MATERIAL=B160
+  *SOLID SECTION, ELSET=WINGTIP, MATERIAL=XT3128
+  *Surface Section, elset=PLY1_REINFORCEMENT
+  *Surface Section, elset=PLY2_REINFORCEMENT
+  *Surface Section, elset=BELT1_REINFORCEMENT
+  *Surface Section, elset=BELT2_REINFORCEMENT
+  *Surface Section, elset=CAPPLY1_REINFORCEMENT
+  *Surface Section, elset=PLY1_REINFORCEMENT
+  *Surface Section, elset=PLY2_REINFORCEMENT
+  *Surface Section, elset=BELT1_REINFORCEMENT
+  *Surface Section, elset=BELT2_REINFORCEMENT
+  *Surface Section, elset=CAPPLY1_REINFORCEMENT
+  *Rigid Body, ref node=LOWER_RIM_REFERENCE_POINT, analytical surface=LOWER_RIM_MASTER_SURFACE
+  *Rigid Body, ref node=UPPER_RIM_REFERENCE_POINT, analytical surface=UPPER_RIM_MASTER_SURFACE
+  *contact interference, shrink
+  *CONTACT PAIR,  INTERACTION=RIM_TYRE, TYPE=NODE TO SURFACE
+  *CONTACT PAIR, INTERACTION=SELF_AB, TYPE=SURFACE TO SURFACE
+  *Rigid Body, ref node=LOWER_RIM_REFERENCE_POINT, analytical surface=LOWER_RIM_MASTER_SURFACE
+  *Rigid Body, ref node=UPPER_RIM_REFERENCE_POINT, analytical surface=UPPER_RIM_MASTER_SURFACE
+  *Rigid Body, ref node=LOWER_RIM_REFERENCE_POINT, analytical surface=LOWER_RIM_MASTER_SURFACE
+  *Rigid Body, ref node=UPPER_RIM_REFERENCE_POINT, analytical surface=UPPER_RIM_MASTER_SURFACE
+  *Rigid Body, ref node=LOWER_RIM_REFERENCE_POINT, analytical surface=LOWER_RIM_MASTER_SURFACE
+  *Rigid Body, ref node=UPPER_RIM_REFERENCE_POINT, analytical surface=UPPER_RIM_MASTER_SURFACE
+  *CONTACT PAIR,  INTERACTION=RIM_TYRE, TYPE=NODE TO SURFACE
+  *CONTACT PAIR, INTERACTION=SELF_AB, TYPE=SURFACE TO SURFACE
+  *Surface, type=SEGMENTS, name=LOWER_RIM_MASTER_SURFACE
+  *Surface, type=SEGMENTS, name=UPPER_RIM_MASTER_SURFACE
+  *Surface, NAME = UPPER_RIM_SLAVE_SURFACE, TYPE = ELEMENT
+  *Surface, NAME = GROOVE1_SLAVE_SURFACE, TYPE = ELEMENT
+  *Surface, NAME = GROOVE1_MASTER_SURFACE, TYPE = ELEMENT
+  *Surface, NAME = LOWER_RIM_SLAVE_SURFACE, TYPE = ELEMENT
+  *Surface, NAME = GROOVE2_SLAVE_SURFACE, TYPE = ELEMENT
+  *Surface, NAME = GROOVE2_MASTER_SURFACE, TYPE = ELEMENT
+  *Surface, NAME = GROOVE3_SLAVE_SURFACE, TYPE = ELEMENT
+  *Surface, NAME = GROOVE3_MASTER_SURFACE, TYPE = ELEMENT
+  *Surface, NAME = INNER_PRESSURE_SURFACE, TYPE = ELEMENT
+  *Surface, NAME = TREAD_TOP_SURFACE, TYPE = ELEMENT
+
+ ***WARNING: A BLANK LINE UNDER *SURFACE WILL BE IGNORED.
+ LINE IMAGE:                                                                    
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                        
+  *Surface, type=SEGMENTS, name=LOWER_RIM_MASTER_SURFACE
+  *Surface, type=SEGMENTS, name=UPPER_RIM_MASTER_SURFACE
+  *Surface, NAME = UPPER_RIM_SLAVE_SURFACE, TYPE = ELEMENT
+  *Surface, NAME = GROOVE1_SLAVE_SURFACE, TYPE = ELEMENT
+  *Surface, NAME = GROOVE1_MASTER_SURFACE, TYPE = ELEMENT
+  *Surface, NAME = LOWER_RIM_SLAVE_SURFACE, TYPE = ELEMENT
+  *Surface, NAME = GROOVE2_SLAVE_SURFACE, TYPE = ELEMENT
+  *Surface, NAME = GROOVE2_MASTER_SURFACE, TYPE = ELEMENT
+  *Surface, NAME = GROOVE3_SLAVE_SURFACE, TYPE = ELEMENT
+  *Surface, NAME = GROOVE3_MASTER_SURFACE, TYPE = ELEMENT
+  *Surface, NAME = INNER_PRESSURE_SURFACE, TYPE = ELEMENT
+  *Surface, NAME = TREAD_TOP_SURFACE, TYPE = ELEMENT
+  *CONTACT PAIR,  INTERACTION=RIM_TYRE, TYPE=NODE TO SURFACE
+
+ ***NOTE: THE ROTATIONAL DEGREES OF FREEDOM OF THE NODES THAT CONSTITUTE THE 
+          SECONDARY SURFACE WILL NOT BE CONSTRAINED BETWEEN THE SECONDARY AND 
+          MAIN PAIR (UPPER_RIM_SLAVE_SURFACE, UPPER_RIM_MASTER_SURFACE).
+
+ ***NOTE: THE ROTATIONAL DEGREES OF FREEDOM OF THE NODES THAT CONSTITUTE THE 
+          SECONDARY SURFACE WILL NOT BE CONSTRAINED BETWEEN THE SECONDARY AND 
+          MAIN PAIR (LOWER_RIM_SLAVE_SURFACE, LOWER_RIM_MASTER_SURFACE).
+  *CONTACT PAIR, INTERACTION=SELF_AB, TYPE=SURFACE TO SURFACE
+  *CONTACT PAIR,  INTERACTION=RIM_TYRE, TYPE=NODE TO SURFACE
+
+ ***NOTE: THE ROTATIONAL DEGREES OF FREEDOM OF THE NODES THAT CONSTITUTE THE 
+          SECONDARY SURFACE WILL NOT BE CONSTRAINED BETWEEN THE SECONDARY AND 
+          MAIN PAIR (UPPER_RIM_SLAVE_SURFACE, UPPER_RIM_MASTER_SURFACE).
+
+ ***NOTE: THE ROTATIONAL DEGREES OF FREEDOM OF THE NODES THAT CONSTITUTE THE 
+          SECONDARY SURFACE WILL NOT BE CONSTRAINED BETWEEN THE SECONDARY AND 
+          MAIN PAIR (LOWER_RIM_SLAVE_SURFACE, LOWER_RIM_MASTER_SURFACE).
+  *CONTACT PAIR, INTERACTION=SELF_AB, TYPE=SURFACE TO SURFACE
+  *CONTACT PAIR,  INTERACTION=RIM_TYRE, TYPE=NODE TO SURFACE
+
+ ***NOTE: THE ROTATIONAL DEGREES OF FREEDOM OF THE NODES THAT CONSTITUTE THE 
+          SECONDARY SURFACE WILL NOT BE CONSTRAINED BETWEEN THE SECONDARY AND 
+          MAIN PAIR (UPPER_RIM_SLAVE_SURFACE, UPPER_RIM_MASTER_SURFACE).
+
+ ***NOTE: THE ROTATIONAL DEGREES OF FREEDOM OF THE NODES THAT CONSTITUTE THE 
+          SECONDARY SURFACE WILL NOT BE CONSTRAINED BETWEEN THE SECONDARY AND 
+          MAIN PAIR (LOWER_RIM_SLAVE_SURFACE, LOWER_RIM_MASTER_SURFACE).
+  *CONTACT PAIR, INTERACTION=SELF_AB, TYPE=SURFACE TO SURFACE
+  *Rigid Body, ref node=LOWER_RIM_REFERENCE_POINT, analytical surface=LOWER_RIM_MASTER_SURFACE
+  *Rigid Body, ref node=UPPER_RIM_REFERENCE_POINT, analytical surface=UPPER_RIM_MASTER_SURFACE
+  *INITIAL CONDITIONS, TYPE=TEMPERATURE
+  *EMBEDDED ELEMENT, HOST ELSET = BELT1
+  *EMBEDDED ELEMENT, HOST ELSET = BELT2
+  *EMBEDDED ELEMENT, HOST ELSET = PLY1
+  *EMBEDDED ELEMENT, HOST ELSET = PLY2
+  *EMBEDDED ELEMENT, HOST ELSET = CAPPLY1
+  *EMBEDDED ELEMENT, HOST ELSET = BELT1
+  *EMBEDDED ELEMENT, HOST ELSET = BELT2
+  *EMBEDDED ELEMENT, HOST ELSET = PLY1
+  *EMBEDDED ELEMENT, HOST ELSET = PLY2
+  *EMBEDDED ELEMENT, HOST ELSET = CAPPLY1
+  *EMBEDDED ELEMENT, HOST ELSET = BELT1
+  *EMBEDDED ELEMENT, HOST ELSET = BELT2
+  *EMBEDDED ELEMENT, HOST ELSET = PLY1
+  *EMBEDDED ELEMENT, HOST ELSET = PLY2
+  *EMBEDDED ELEMENT, HOST ELSET = CAPPLY1
+  *Rigid Body, ref node=LOWER_RIM_REFERENCE_POINT, analytical surface=LOWER_RIM_MASTER_SURFACE
+  *Rigid Body, ref node=UPPER_RIM_REFERENCE_POINT, analytical surface=UPPER_RIM_MASTER_SURFACE
+  *Rigid Body, ref node=LOWER_RIM_REFERENCE_POINT, analytical surface=LOWER_RIM_MASTER_SURFACE
+  *Rigid Body, ref node=UPPER_RIM_REFERENCE_POINT, analytical surface=UPPER_RIM_MASTER_SURFACE
+  *Boundary, op=new
+  *BOUNDARY
+  *Boundary, op=new
+  *Boundary, op=new
+  *CONTACT PAIR,  INTERACTION=RIM_TYRE, TYPE=NODE TO SURFACE
+
+ ***NOTE: THE ROTATIONAL DEGREES OF FREEDOM OF THE NODES THAT CONSTITUTE THE 
+          SECONDARY SURFACE WILL NOT BE CONSTRAINED BETWEEN THE SECONDARY AND 
+          MAIN PAIR (UPPER_RIM_SLAVE_SURFACE, UPPER_RIM_MASTER_SURFACE).
+
+ ***NOTE: THE ROTATIONAL DEGREES OF FREEDOM OF THE NODES THAT CONSTITUTE THE 
+          SECONDARY SURFACE WILL NOT BE CONSTRAINED BETWEEN THE SECONDARY AND 
+          MAIN PAIR (LOWER_RIM_SLAVE_SURFACE, LOWER_RIM_MASTER_SURFACE).
+  *CONTACT PAIR, INTERACTION=SELF_AB, TYPE=SURFACE TO SURFACE
+  *CONTACT PAIR,  INTERACTION=RIM_TYRE, TYPE=NODE TO SURFACE
+
+ ***NOTE: THE ROTATIONAL DEGREES OF FREEDOM OF THE NODES THAT CONSTITUTE THE 
+          SECONDARY SURFACE WILL NOT BE CONSTRAINED BETWEEN THE SECONDARY AND 
+          MAIN PAIR (UPPER_RIM_SLAVE_SURFACE, UPPER_RIM_MASTER_SURFACE).
+
+ ***NOTE: THE ROTATIONAL DEGREES OF FREEDOM OF THE NODES THAT CONSTITUTE THE 
+          SECONDARY SURFACE WILL NOT BE CONSTRAINED BETWEEN THE SECONDARY AND 
+          MAIN PAIR (LOWER_RIM_SLAVE_SURFACE, LOWER_RIM_MASTER_SURFACE).
+  *CONTACT PAIR, INTERACTION=SELF_AB, TYPE=SURFACE TO SURFACE
+  *Rigid Body, ref node=LOWER_RIM_REFERENCE_POINT, analytical surface=LOWER_RIM_MASTER_SURFACE
+  *Rigid Body, ref node=UPPER_RIM_REFERENCE_POINT, analytical surface=UPPER_RIM_MASTER_SURFACE
+  *Rebar Layer, geometry=lift equation
+  *Rebar Layer, geometry=lift equation
+  *Rebar Layer, geometry=lift equation
+  *Rebar Layer, geometry=lift equation
+  *Rebar Layer
+  *Surface, type=SEGMENTS, name=LOWER_RIM_MASTER_SURFACE
+  *Surface, type=SEGMENTS, name=UPPER_RIM_MASTER_SURFACE
+  *Surface, NAME = UPPER_RIM_SLAVE_SURFACE, TYPE = ELEMENT
+  *Surface, NAME = GROOVE1_SLAVE_SURFACE, TYPE = ELEMENT
+  *Surface, NAME = GROOVE1_MASTER_SURFACE, TYPE = ELEMENT
+  *Surface, NAME = LOWER_RIM_SLAVE_SURFACE, TYPE = ELEMENT
+  *Surface, NAME = GROOVE2_SLAVE_SURFACE, TYPE = ELEMENT
+  *Surface, NAME = GROOVE2_MASTER_SURFACE, TYPE = ELEMENT
+  *Surface, NAME = GROOVE3_SLAVE_SURFACE, TYPE = ELEMENT
+  *Surface, NAME = GROOVE3_MASTER_SURFACE, TYPE = ELEMENT
+  *Surface, NAME = INNER_PRESSURE_SURFACE, TYPE = ELEMENT
+  *Surface, NAME = TREAD_TOP_SURFACE, TYPE = ELEMENT
+  *EMBEDDED ELEMENT, HOST ELSET = BELT1
+  *EMBEDDED ELEMENT, HOST ELSET = BELT2
+  *EMBEDDED ELEMENT, HOST ELSET = PLY1
+  *EMBEDDED ELEMENT, HOST ELSET = PLY2
+  *EMBEDDED ELEMENT, HOST ELSET = CAPPLY1
+  *Output,field, ,VAR=PRESELECT
+  *OUTPUT, FIELD, VARIABLE=PRESELECT, FREQUENCY=100
+  *OUTPUT, HISTORY, VARIABLE=PRESELECT
+  *Element output,VAR=PRESELECT
+  *ELEMENT OUTPUT, REBAR, DIRECTIONS=YES
+  *INITIAL CONDITIONS, TYPE=TEMPERATURE
+  *TEMPERATURE
+  *Output,field, ,VAR=PRESELECT
+  *OUTPUT, FIELD, VARIABLE=PRESELECT, FREQUENCY=100
+  *OUTPUT, HISTORY, VARIABLE=PRESELECT
+  *Element output,VAR=PRESELECT
+  *ELEMENT OUTPUT, REBAR, DIRECTIONS=YES
+  *INITIAL CONDITIONS, TYPE=TEMPERATURE
+  *Output,field, ,VAR=PRESELECT
+  *OUTPUT, FIELD, VARIABLE=PRESELECT, FREQUENCY=100
+  *OUTPUT, HISTORY, VARIABLE=PRESELECT
+  *Element output,VAR=PRESELECT
+  *ELEMENT OUTPUT, REBAR, DIRECTIONS=YES
+  
+                               E L E M E N T   Q U A L I T Y  C H E C K S        
+  
+  
+ ***NOTES: DISTORTED ISOPARAMETRIC ELEMENTS: ANGLE BETWEEN ISOPARAMETRIC LINES 
+           IS LESS THAN 45 DEGREES OR GREATER THAN 135 DEGREES.
+  
+           TETRAHEDRAL QUALITY MEASURE: VOLUME OF TETRAHEDRON DIVIDED BY THE 
+           VOLUME OF EQUILATERAL TETRAHEDRON WITH SAME CIRCUMSPHERE RADIUS; 
+           0 FOR DEGENERATE TETRAHEDRON AND 1 FOR EQUILATERIAL TETRAHEDRON. IT 
+           IS RECOMMENDED THAT THE TETRAHEDRAL QUALITY MEASURE BE GREATER THAN 
+           0.02, THE MIN INTERIOR (DIHEDRAL) ANGLE BE GREATER THAN 10 DEGREES, 
+           AND THE MAX INTERIOR (DIHEDRAL) ANGLE BE LESS THAN 160 DEGREES. 
+  
+           MODIFIED TETRAHEDRAL QUALITY MEASURE: ANGLES BETWEEN THE TWO LINE 
+           SEGMENTS ON EACH EDGE; THE EDGES OF MODIFIED TETRAHEDRAL SHOULD BE 
+           AS STRAIGHT AS POSSIBLE. IT IS RECOMMENDED THAT THE ANGLE BETWEEN 
+           THE TWO LINE SEGMENTS ON EACH EDGE IS BETWEEN 160 AND 180 DEGREES. 
+  
+           TRIANGULAR QUALITY MEASURE: AREA OF TRIANGLE DIVIDED BY THE AREA OF 
+           EQUILATERAL TRIANGLE WITH SAME CIRCUMCIRCLE RADIUS; 0 FOR DEGENERATE 
+           TRIANGLE AND 1 FOR EQUILATERAL TRIANGLE. IT IS RECOMMENDED THAT THE
+           TRIANGULAR QUALITY MEASURE BE GREATER THAN 0.01, THE MIN INTERIOR 
+           ANGLE BE GREATER THAN 10 DEGREES, AND THE MAX INTERIOR ANGLE BE LESS 
+           THAN 160 DEGREES. 
+  
+           NODAL ADJUSTMENTS ARISING FROM CONTACT INTERACTIONS AND/OR TIE 
+           CONSTRAINTS CAN CAUSE SEVERE ELEMENT DISTORTION. IT MAY BE NECESSARY 
+           TO REMESH IN ORDER TO REDUCE THE AMOUNT OF ADJUSTMENT. 
+
+ ***WARNING: 4 elements are distorted. Either the isoparametric angles are out 
+             of the suggested limits or the triangular or tetrahedral quality 
+             measure is bad. The elements have been identified in element set 
+             WarnElemDistorted.
+  
+ --------------------------------------------------------------------------------
+ Distorted triangular elements
+  
+ Element   Quality measure     Min angle        Max angle     Adjusted nodes 
+ --------- ---------------- ---------------- ---------------- -------------- 
+      2121         0.170787          7.16325          105.466       NO       
+      2132         0.170787          7.16325          105.466       NO       
+      2163         0.210696          9.70165           110.31       NO       
+      2178         0.210897          9.70891          110.293       NO       
+  
+  
+  *Step, Nlgeom=yes, Name=Position_Rim
+  *STEP, NAME=COOLING, NLGEOM=YES, UNSYM=YES, CONVERT SDI=YES
+  *STEP, Nlgeom=yes, Name=RIM_MOUNTING
+  *STEP, NAME=INFLATION, NLGEOM=YES, UNSYMM=YES
+  *Step, Nlgeom=yes, Name=Position_Rim
+  *Output,field, ,VAR=PRESELECT
+  *STEP, NAME=COOLING, NLGEOM=YES, UNSYM=YES, CONVERT SDI=YES
+  *OUTPUT, FIELD, VARIABLE=PRESELECT, FREQUENCY=100
+  *OUTPUT, HISTORY, VARIABLE=PRESELECT
+  *STEP, Nlgeom=yes, Name=RIM_MOUNTING
+  *STEP, NAME=INFLATION, NLGEOM=YES, UNSYMM=YES
+  *Step, Nlgeom=yes, Name=Position_Rim
+  *STEP, NAME=COOLING, NLGEOM=YES, UNSYM=YES, CONVERT SDI=YES
+  *STEP, Nlgeom=yes, Name=RIM_MOUNTING
+  *STEP, NAME=INFLATION, NLGEOM=YES, UNSYMM=YES
+  *Step, Nlgeom=yes, Name=Position_Rim
+  POSITIONING_RIM                                                                 
+  *Static
+  *contact interference, shrink
+  *model change, remove, type=contact pair
+  *Boundary, op=new
+  *Output,field, ,VAR=PRESELECT
+  *Element output,VAR=PRESELECT
+  *NODE OUTPUT
+  *Contact output
+  *End step
+
+ ***WARNING: ELEMENT OUTPUT IN A SURFACE ELEMENT IS CURRENTLY AVAILABLE ONLY 
+             FOR DISTRIBUTED LOADS AND WHEN THE REBAR PARAMETER IS USED
+
+ ***WARNING: ELEMENT OUTPUT IN A SURFACE ELEMENT IS CURRENTLY AVAILABLE ONLY 
+             FOR DISTRIBUTED LOADS AND WHEN THE REBAR PARAMETER IS USED
+  *STEP, NAME=COOLING, NLGEOM=YES, UNSYM=YES, CONVERT SDI=YES
+  COOLING                                                                         
+  *STATIC
+  *BOUNDARY
+  *CONTROLS, ANALYSIS=DISCONTINUOUS
+  *TEMPERATURE
+  *OUTPUT, FIELD, VARIABLE=PRESELECT, FREQUENCY=100
+  *ELEMENT OUTPUT, REBAR, DIRECTIONS=YES
+  *NODE OUTPUT
+  *OUTPUT, HISTORY, VARIABLE=PRESELECT
+  *END STEP
+
+ ***WARNING: ELEMENT OUTPUT WITH REBAR PARAMETER IS CURRENTLY AVAILABLE FOR 
+             MEMBRANE, SHELL OR SURFACE ELEMENTS ONLY. IN ORDER TO VISUALIZE 
+             THE REBAR RESULTS, YOU SHOULD CONVERT THE INPUT DATA SO THAT THE 
+             REBAR IS DEFINED USING MEMBRANE, SHELL OR SURFACE ELEMENTS.
+
+ ***WARNING: ELEMENT OUTPUT WITH REBAR PARAMETER IS CURRENTLY AVAILABLE FOR 
+             MEMBRANE, SHELL OR SURFACE ELEMENTS ONLY. IN ORDER TO VISUALIZE 
+             THE REBAR RESULTS, YOU SHOULD CONVERT THE INPUT DATA SO THAT THE 
+             REBAR IS DEFINED USING MEMBRANE, SHELL OR SURFACE ELEMENTS.
+
+ ***WARNING: ELEMENT OUTPUT WITH REBAR PARAMETER IS CURRENTLY AVAILABLE FOR 
+             MEMBRANE, SHELL OR SURFACE ELEMENTS ONLY. IN ORDER TO VISUALIZE 
+             THE REBAR RESULTS, YOU SHOULD CONVERT THE INPUT DATA SO THAT THE 
+             REBAR IS DEFINED USING MEMBRANE, SHELL OR SURFACE ELEMENTS.
+
+ ***WARNING: ELEMENT OUTPUT IN A SURFACE ELEMENT IS CURRENTLY AVAILABLE ONLY 
+             FOR DISTRIBUTED LOADS AND WHEN THE REBAR PARAMETER IS USED
+  *STEP, Nlgeom=yes, Name=RIM_MOUNTING
+  RIM_MOUNTING                                                                    
+  *Static
+  *Model change, add, type=contact pair
+  *Boundary, op=new
+  *End step
+
+ ***WARNING: ELEMENT OUTPUT WITH REBAR PARAMETER IS CURRENTLY AVAILABLE FOR 
+             MEMBRANE, SHELL OR SURFACE ELEMENTS ONLY. IN ORDER TO VISUALIZE 
+             THE REBAR RESULTS, YOU SHOULD CONVERT THE INPUT DATA SO THAT THE 
+             REBAR IS DEFINED USING MEMBRANE, SHELL OR SURFACE ELEMENTS.
+
+ ***WARNING: ELEMENT OUTPUT WITH REBAR PARAMETER IS CURRENTLY AVAILABLE FOR 
+             MEMBRANE, SHELL OR SURFACE ELEMENTS ONLY. IN ORDER TO VISUALIZE 
+             THE REBAR RESULTS, YOU SHOULD CONVERT THE INPUT DATA SO THAT THE 
+             REBAR IS DEFINED USING MEMBRANE, SHELL OR SURFACE ELEMENTS.
+
+ ***WARNING: ELEMENT OUTPUT WITH REBAR PARAMETER IS CURRENTLY AVAILABLE FOR 
+             MEMBRANE, SHELL OR SURFACE ELEMENTS ONLY. IN ORDER TO VISUALIZE 
+             THE REBAR RESULTS, YOU SHOULD CONVERT THE INPUT DATA SO THAT THE 
+             REBAR IS DEFINED USING MEMBRANE, SHELL OR SURFACE ELEMENTS.
+
+ ***WARNING: ELEMENT OUTPUT IN A SURFACE ELEMENT IS CURRENTLY AVAILABLE ONLY 
+             FOR DISTRIBUTED LOADS AND WHEN THE REBAR PARAMETER IS USED
+  *STEP, NAME=INFLATION, NLGEOM=YES, UNSYMM=YES
+  INFLATION ANALYSIS                                                              
+  *STATIC
+  *CONTROLS, ANALYSIS=DISCONTINUOUS
+  *DSLOAD
+  *END STEP
+
+ ***WARNING: ELEMENT OUTPUT WITH REBAR PARAMETER IS CURRENTLY AVAILABLE FOR 
+             MEMBRANE, SHELL OR SURFACE ELEMENTS ONLY. IN ORDER TO VISUALIZE 
+             THE REBAR RESULTS, YOU SHOULD CONVERT THE INPUT DATA SO THAT THE 
+             REBAR IS DEFINED USING MEMBRANE, SHELL OR SURFACE ELEMENTS.
+
+ ***WARNING: ELEMENT OUTPUT WITH REBAR PARAMETER IS CURRENTLY AVAILABLE FOR 
+             MEMBRANE, SHELL OR SURFACE ELEMENTS ONLY. IN ORDER TO VISUALIZE 
+             THE REBAR RESULTS, YOU SHOULD CONVERT THE INPUT DATA SO THAT THE 
+             REBAR IS DEFINED USING MEMBRANE, SHELL OR SURFACE ELEMENTS.
+
+ ***WARNING: ELEMENT OUTPUT WITH REBAR PARAMETER IS CURRENTLY AVAILABLE FOR 
+             MEMBRANE, SHELL OR SURFACE ELEMENTS ONLY. IN ORDER TO VISUALIZE 
+             THE REBAR RESULTS, YOU SHOULD CONVERT THE INPUT DATA SO THAT THE 
+             REBAR IS DEFINED USING MEMBRANE, SHELL OR SURFACE ELEMENTS.
+
+ ***WARNING: ELEMENT OUTPUT IN A SURFACE ELEMENT IS CURRENTLY AVAILABLE ONLY 
+             FOR DISTRIBUTED LOADS AND WHEN THE REBAR PARAMETER IS USED
+  *Step, Nlgeom=yes, Name=Position_Rim
+  *Static
+  *Boundary, op=new
+  *End step
+  *STEP, NAME=COOLING, NLGEOM=YES, UNSYM=YES, CONVERT SDI=YES
+  *STATIC
+  *BOUNDARY
+  *TEMPERATURE
+  *END STEP
+  *STEP, Nlgeom=yes, Name=RIM_MOUNTING
+  *Static
+  *Boundary, op=new
+  *End step
+  *STEP, NAME=INFLATION, NLGEOM=YES, UNSYMM=YES
+  *STATIC
+  *END STEP
+
+ ***WARNING: Boundary conditions are specified on inactive dof 3 at 2 nodes. 
+             The nodes have been identified in node set WarnNodeBCInactiveDof3.
+
+ ***WARNING: Boundary conditions are specified on inactive dof 4 at 2 nodes. 
+             The nodes have been identified in node set WarnNodeBCInactiveDof4.
+
+ ***WARNING: Boundary conditions are specified on inactive dof 5 at 2 nodes. 
+             The nodes have been identified in node set WarnNodeBCInactiveDof5.
+
+ ***WARNING: Boundary conditions are specified on inactive dof 5 at 2 nodes. 
+             The nodes have been identified in node set WarnNodeBCInactiveDof5.
+
+ ***WARNING: Boundary conditions are specified on inactive dof 5 at 2 nodes. 
+             The nodes have been identified in node set WarnNodeBCInactiveDof5.
+
+     - (RAMP) OR (STEP) - INDICATE USE OF DEFAULT AMPLITUDES ASSOCIATED WITH THE STEP
+
+ ***WARNING: Boundary conditions are specified on inactive dof 5 at 2 nodes. 
+             The nodes have been identified in node set WarnNodeBCInactiveDof5.
+
+
+
+                            P R O B L E M   S I Z E
+
+
+          NUMBER OF ELEMENTS IS                                  1039
+          NUMBER OF ELEMENTS DEFINED BY THE USER AND *TIE         984
+          NUMBER OF INTERNAL ELEMENTS GENERATED FOR CONTACT        53
+          NUMBER OF NODES IS                                     1842
+          NUMBER OF NODES DEFINED BY THE USER                    1071
+          NUMBER OF INTERNAL NODES GENERATED BY THE PROGRAM       771
+          TOTAL NUMBER OF VARIABLES IN THE MODEL                 4037
+          (DEGREES OF FREEDOM PLUS MAX NO. OF ANY LAGRANGE MULTIPLIER
+           VARIABLES. INCLUDE *PRINT,SOLVE=YES TO GET THE ACTUAL NUMBER.)
+
+
+
+                              END OF USER INPUT PROCESSING
+
+
+
+     JOB TIME SUMMARY
+       USER TIME (SEC)      =     0.60    
+       SYSTEM TIME (SEC)    =     0.40    
+       TOTAL CPU TIME (SEC) =      1.0    
+       WALLCLOCK TIME (SEC) =            2

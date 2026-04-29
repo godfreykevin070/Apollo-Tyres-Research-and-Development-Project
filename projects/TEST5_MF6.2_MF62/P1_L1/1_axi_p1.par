@@ -1,0 +1,154 @@
+﻿*parameter
+****load details--------------------- <ABAQUS comment>
+load1_kg=660 <= 660>
+load2_kg=555 <= 555>
+load3_kg=425 <= 425>
+pressure1=24.75 <= 24.75>
+pressure2=32 <= 32>
+pressure3=39.25 <= 39.25>
+speed_kmph=80 <= 80>
+IA=5 <= 5>
+SA=20 <= 20>
+SR=30 <= 30>
+****RIM_details--------------------- <ABAQUS comment>
+width=178 <= 178>
+diameter=487.4 <= 487.4>
+**********----------------------- <ABAQUS comment>
+Outer_diameter=100 <= 100>
+nomwidth=100 <= 100>
+aspratio=100 <= 100>
+************ <ABAQUS comment>
+inflation_pressure1=0.00689476*pressure1 <= 0.17064531>
+inflation_pressure1=0.00689476*pressure2 <= 0.22063232>
+inflation_pressure1=0.00689476*pressure3 <= 0.27061933>
+load1=9.81*load1_kg <= 6474.6>
+load2=9.81*load2_kg <= 5444.55>
+load3=9.81*load3_kg <= 4169.25>
+Outer_radius=Outer_diameter/2000 <= 0.05>
+speed=speed_kmph*1000*1000/3600 <= 22222.222222222223>
+****RIM_Movement--------------------- <ABAQUS comment>
+rimdisp_plus = 60.0 <= 60.0>
+rimdisp_minus = -60.0 <= -60.0>
+************* <ABAQUS comment>
+initial_velocity=speed/Outer_radius <= 444444.44444444444>
+***********************Cornering***************** <ABAQUS comment>
+cos2=0.999390827 <= 0.999390827>
+cos4=0.99756405 <= 0.99756405>
+cos6=0.994521895 <= 0.994521895>
+cos8=0.990268069 <= 0.990268069>
+cos10=0.984807753 <= 0.984807753>
+cos12=0.978147601 <= 0.978147601>
+cos14=0.970295726 <= 0.970295726>
+cos16=0.961261696 <= 0.961261696>
+sin2=0.034899497 <= 0.034899497>
+sin4=0.069756474 <= 0.069756474>
+sin6=0.104528463 <= 0.104528463>
+sin8=0.139173101 <= 0.139173101>
+sin10=0.173648178 <= 0.173648178>
+sin12=0.207911691 <= 0.207911691>
+sin14=0.241921896 <= 0.241921896>
+sin16=0.275637356 <= 0.275637356>
+********************************* <ABAQUS comment>
+deg2_RP1=speed*cos2 <INCORRECT SYNTAX>
+deg2_RP2=speed*sin2 <INCORRECT SYNTAX>
+deg4_RP1=speed*cos4 <INCORRECT SYNTAX>
+deg4_RP2=speed*sin4 <INCORRECT SYNTAX>
+deg6_RP1=speed*cos6 <INCORRECT SYNTAX>
+deg6_RP2=speed*sin6 <INCORRECT SYNTAX>
+deg8_RP1=speed*cos8 <INCORRECT SYNTAX>
+deg8_RP2=speed*sin8 <INCORRECT SYNTAX>
+deg10_RP1=speed*cos10 <INCORRECT SYNTAX>
+deg10_RP2=speed*sin10 <INCORRECT SYNTAX>
+deg12_RP1=speed*cos12 <INCORRECT SYNTAX>
+deg12_RP2=speed*sin12 <INCORRECT SYNTAX>
+deg14_RP1=speed*cos14 <INCORRECT SYNTAX>
+deg14_RP2=speed*sin14 <INCORRECT SYNTAX>
+deg16_RP1=speed*cos16 <INCORRECT SYNTAX>
+deg16_RP2=speed*sin16 <INCORRECT SYNTAX>
+*parameter
+D2 = diameter*0.5 <= 243.7>
+A2 = width*0.5 <= 89.0>
+
+** -------------------------------------------------------------- <ABAQUS comment>
+** Starting point at the end of the rim, 0.5 mm below the top <ABAQUS comment>
+** -------------------------------------------------------------- <ABAQUS comment>
+
+** deltaD = 0.5; <ABAQUS comment>
+** Angle alfa corresponding to this delta: <ABAQUS comment>
+** alfa = asin((R1 - deltaD)/R1); <ABAQUS comment>
+** deltaA correspondig to this delta: <ABAQUS comment>
+** deltaA = R1 * cos(alfa); <ABAQUS comment>
+** y0 = A2 + R1 + deltaA = A2 + B <ABAQUS comment>
+y0 = A2 + 12.541381265149111 <= 101.54138126514911>
+minusy0 = -y0 <= -101.54138126514911>
+** x0 = D2 + G - deltaD; <ABAQUS comment>
+x0 = D2 + 16.8 <= 260.5>
+
+** -------------------------------------------------------------- <ABAQUS comment>
+** Coordinate at the end of arc R1 (point 1) <ABAQUS comment>
+** -------------------------------------------------------------- <ABAQUS comment>
+
+y1 = A2 <= 89.0>
+minusy1 = -y1 <= -89.0>
+** x1 = D2 + G - R1 <ABAQUS comment>
+x1 = D2 + 7.8 <= 251.5>
+
+** -------------------------------------------------------------- <ABAQUS comment>
+** Center of arc R1 (R1c) <ABAQUS comment>
+** -------------------------------------------------------------- <ABAQUS comment>
+
+** yR1c = A2 + R1 <ABAQUS comment>
+yR1c = A2 + 9.5 <= 98.5>
+minusyR1c = -yR1c <= -98.5>
+xR1c = x1 <= 251.5>
+
+** -------------------------------------------------------------- <ABAQUS comment>
+** Coordinate at the end of arc R2 (point 3) <ABAQUS comment>
+** -------------------------------------------------------------- <ABAQUS comment>
+
+** Angle from vertical line to line with slope equal to 5 degrees <ABAQUS comment>
+** =>  = 85 degrees <ABAQUS comment>
+** phi = deg2rad(85.0) <ABAQUS comment>
+** deltaA = R2 * cos(phi) <ABAQUS comment>
+** y3 = A2 - R2 + deltaA <ABAQUS comment>
+y3 = A2 - 5.933487672140222 <= 83.06651232785978>
+minusy3 = -y3 <= -83.06651232785978>
+
+** Point should be on line with slope = 5 degrees <ABAQUS comment>
+** d = alfa * a + beta ; alfa = sin(deg2rad(5.0)) <ABAQUS comment>
+** a = 0 => d = D2 - A2*sin(deg2rad(5.0)) <ABAQUS comment>
+**   => beta = D2 - A2*sin(deg2rad(5.0)) <ABAQUS comment>
+beta = D2 - A2*0.087155742747658 <= 235.94313889545842>
+** a = A2 => d = D2 <ABAQUS comment>
+**   => alfa = (D2 - beta) / A2 = sin(deg2rad(5.0)) <ABAQUS comment>
+** x3 = y3*alfa + beta; <ABAQUS comment>
+x3 = y3*0.087155742747658 + beta <= 243.18286247485054>
+
+** -------------------------------------------------------------- <ABAQUS comment>
+** Coordinate at the beginning of arc R2 (point 2) <ABAQUS comment>
+** -------------------------------------------------------------- <ABAQUS comment>
+
+y2 = y1 <= 89.0>
+minusy2 = -y2 <= -89.0>
+** x2 = x3 + R2 * sin(phi) <ABAQUS comment>
+x2 = x3 + 6.475265537596346 <= 249.6581280124469>
+
+** -------------------------------------------------------------- <ABAQUS comment>
+** Center of arc R2 (R2c) <ABAQUS comment>
+** -------------------------------------------------------------- <ABAQUS comment>
+
+xR2c = x2 <= 249.6581280124469>
+** yR2c = A2 - R2; <ABAQUS comment>
+yR2c = A2 - 6.5 <= 82.5>
+minusyR2c = -yR2c <= -82.5>
+
+
+** -------------------------------------------------------------- <ABAQUS comment>
+** Rim center (point 4) <ABAQUS comment>
+** -------------------------------------------------------------- <ABAQUS comment>
+
+y4 = 0.0 <= 0.0>
+x4 = beta <= 235.94313889545842>
+
+** ---------------------------------------------------------------- <ABAQUS comment>
+

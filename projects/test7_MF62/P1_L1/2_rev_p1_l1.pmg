@@ -1,0 +1,56 @@
+
+ ***COMMENT: STARTING PARAMETER EVALUATION 
+
+ ***ERROR:   INCORRECT SYNTAX
+              >>> 2deg_RP1=speed*cos2
+
+ ***ERROR:   INCORRECT SYNTAX
+              >>> 2deg_RP2=speed*sin2
+
+ ***ERROR:   INCORRECT SYNTAX
+              >>> 4deg_RP1=speed*cos4
+
+ ***ERROR:   INCORRECT SYNTAX
+              >>> 4deg_RP2=speed*sin4
+
+ ***ERROR:   INCORRECT SYNTAX
+              >>> 6deg_RP1=speed*cos6
+
+ ***ERROR:   INCORRECT SYNTAX
+              >>> 6deg_RP2=speed*sin6
+
+ ***ERROR:   INCORRECT SYNTAX
+              >>> 8deg_RP1=speed*cos8
+
+ ***ERROR:   INCORRECT SYNTAX
+              >>> 8deg_RP2=speed*sin8
+
+ ***ERROR:   INCORRECT SYNTAX
+              >>> 10deg_RP1=speed*cos10
+
+ ***ERROR:   INCORRECT SYNTAX
+              >>> 10deg_RP2=speed*sin10
+
+ ***ERROR:   INCORRECT SYNTAX
+              >>> 12deg_RP1=speed*cos12
+
+ ***ERROR:   INCORRECT SYNTAX
+              >>> 12deg_RP2=speed*sin12
+
+ ***ERROR:   INCORRECT SYNTAX
+              >>> 14deg_RP1=speed*cos14
+
+ ***ERROR:   INCORRECT SYNTAX
+              >>> 14deg_RP2=speed*sin14
+
+ ***ERROR:   INCORRECT SYNTAX
+              >>> 16deg_RP1=speed*cos16
+
+ ***ERROR:   INCORRECT SYNTAX
+              >>> 16deg_RP2=speed*sin16
+
+ ***ERROR:   EVALUATION OF PARAMETERS FAILED 
+
+ ***COMMENT: STARTING PARAMETER SUBSTITUTION
+
+ ***COMMENT: EVALUATION AND SUBSTITUTION OF PARAMETERS COMPLETED

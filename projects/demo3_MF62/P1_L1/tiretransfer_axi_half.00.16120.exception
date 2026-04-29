@@ -1,0 +1,56 @@
+<Description>
+   standard.exe / rank 0 / thread 0  encountered an unhandled exception
+
+</Description>
+
+<Context>
+   SOLVER
+</Context>
+
+<Phase>
+   Increment | Attempt | Iteration | CallSolver | Assemble
+</Phase>
+
+<Callstack>
+  1)  KERNELBASE.dll                  RaiseException                          
+  2)  VCRUNTIME140.dll                CxxThrowException                       
+  3)  SMAEqsDirInterMod.dll           num_RuntimeException::handleError       
+  4)  SMAEqsDirInterMod.dll           num_SHMBufferAgent::activateRegion      
+  5)  SMAEqsDirInterMod.dll           num_SHMBufferAgent::allocateMemory      
+  6)  SMAEqsDirInterMod.dll           num_SharedBufferBroker::allocate        
+  7)  SMAEqsDirInterMod.dll           num_SHMComm::allocateOpArray            
+  8)  SMAEqsDirInterMod.dll           SHMCOMM_AllocateOperatorArray           
+  9)  ABQSMAEqsDirSolverMod.dll       SMAEqsDirAssembledOperators::Assemble   
+ 10)  ABQSMAStaCore.dll               SMASta_dirsolver                        
+</Callstack>
+
+<Memory>
+   <Current>            0 GB </Current>
+   <Resident>           0 GB </Resident>
+   <Physical>          31 GB </Physical>
+   <Limit>             25 GB </Limit>
+   <Accessible>        31 GB </Accessible>
+   <Available>         15 GB </Available>
+   <Allocator>            DL </Allocator>
+</Memory>
+
+<Swap>
+       <Size>          36 GB </Size>
+       <Used>          21 GB </Used>
+       <Free>          15 GB </Free>
+</Swap>
+
+<Directories>
+  <current> C:\Users\TPO~1.RND\AppData\Local\Temp\tpo.rndsimportal_tiretransfer_axi_half_2984 </current> <free>      0 GB </free>   <used>    344 GB </used> 
+    <indir> C:\Users\tpo.rndsimportal\Downloads\12.10-main\Apollo-Tyres_updates\projects\demo3_mf62\P1_L1 </indir>   <free>      0 GB </free>  
+   <outdir> C:\Users\tpo.rndsimportal\Downloads\12.10-main\Apollo-Tyres_updates\projects\demo3_mf62\P1_L1 </outdir>  <free>      0 GB </free> 
+   <tmpdir> C:\Users\TPO~1.RND\AppData\Local\Temp\tpo.rndsimportal_tiretransfer_axi_half_2984 </tmpdir>  <free>      0 GB </free> 
+     <temp> C:\Users\TPO~1.RND\AppData\Local\Temp </temp>    <free>      0 GB </free>
+</Directories>
+
+<Installation>
+     <Version> 2024.HF5 6.24-6 </Version>
+       <Build> 2024_09_25-22.49.41 RELr426 191541 </Build>
+  <Executable> C:\SIMULIA\EstProducts\2024\win_b64\code\bin\standard.exe </Executable>
+</Installation>
+

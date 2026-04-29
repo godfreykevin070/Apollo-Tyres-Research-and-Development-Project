@@ -1,0 +1,37 @@
+*parameter
+****load details--------------------- <ABAQUS comment>
+load1_kg=660 <= 660>
+load2_kg=555 <= 555>
+load3_kg=425 <= 425>
+pressure1=24.75 <= 24.75>
+pressure2=32 <= 32>
+pressure3=39.25 <= 39.25>
+speed_kmph=80 <= 80>
+IA=5 <= 5>
+SA=20 <= 20>
+SR=30 <= 30>
+****RIM_details--------------------- <ABAQUS comment>
+width=178 <= 178>
+diameter=487.4 <= 487.4>
+**********----------------------- <ABAQUS comment>
+Outer_diameter=100 <= 100>
+nomwidth=235 <= 235>
+aspratio=55 <= 55>
+************ <ABAQUS comment>
+inflation_pressure1=0.00689476*pressure1 <= 0.17064531>
+inflation_pressure1=0.00689476*pressure2 <= 0.22063232>
+inflation_pressure1=0.00689476*pressure3 <= 0.27061933>
+load1=9.81*load1_kg <= 6474.6>
+load2=9.81*load2_kg <= 5444.55>
+load3=9.81*load3_kg <= 4169.25>
+Outer_radius=Outer_diameter/2000 <= 0.05>
+speed=speed_kmph*1000*1000/3600 <= 22222.222222222223>
+****RIM_Movement--------------------- <ABAQUS comment>
+rimdisp_plus = 60.0 <= 60.0>
+rimdisp_minus = -60.0 <= -60.0>
+************* <ABAQUS comment>
+initial_velocity=speed/Outer_radius <= 444444.44444444444>
+***********************Cornering***************** <ABAQUS comment>
+*parameter
+freeroll_velocity=61.33839747838400 <= 61.338397478384>
+************************************************************************ <ABAQUS comment>

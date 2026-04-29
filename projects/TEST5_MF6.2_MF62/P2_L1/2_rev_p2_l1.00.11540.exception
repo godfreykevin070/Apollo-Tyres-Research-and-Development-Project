@@ -1,0 +1,50 @@
+<Description>
+   ABAQUS/Pre encountered errors processing 2_rev_p2_l1
+
+</Description>
+
+<Context>
+   PRE
+</Context>
+
+<Phase>
+   pre | Bulk | Bulk-Loop1
+</Phase>
+
+
+<Memory>
+   <Current>            4 GB </Current>
+   <Resident>           0 GB </Resident>
+   <Physical>          31 GB </Physical>
+   <Limit>             20 GB </Limit>
+   <Accessible>        31 GB </Accessible>
+   <Available>         15 GB </Available>
+   <Allocator>            DL </Allocator>
+</Memory>
+
+<Swap>
+       <Size>          36 GB </Size>
+       <Used>          27 GB </Used>
+       <Free>           9 GB </Free>
+</Swap>
+
+<Directories>
+  <current> C:\Users\TPO~1.RND\AppData\Local\Temp\tpo.rndsimportal_2_rev_p2_l1_15516 </current> <free>      0 GB </free>   <used>    343 GB </used> 
+    <indir> D:\share\Apollo-Tyres_new\projects\TEST5_MF6.2_mf62\P2_L1 </indir>   <free>   1172 GB </free>  
+   <outdir> D:\share\Apollo-Tyres_new\projects\TEST5_MF6.2_mf62\P2_L1 </outdir>  <free>   1172 GB </free> 
+   <tmpdir> C:\Users\TPO~1.RND\AppData\Local\Temp\tpo.rndsimportal_2_rev_p2_l1_15516 </tmpdir>  <free>      0 GB </free> 
+     <temp> C:\Users\TPO~1.RND\AppData\Local\Temp </temp>    <free>      0 GB </free>
+</Directories>
+
+<Installation>
+     <Version> 2024.HF5 6.24-6 </Version>
+       <Build> 2024_09_25-22.49.41 RELr426 191541 </Build>
+  <Executable> C:\SIMULIA\EstProducts\2024\win_b64\code\bin\pre.exe </Executable>
+</Installation>
+
+<Callstack>
+  1)  ABQSMAPreCore.dll               smapre_setdcouppenaltyfactor            
+  2)  VCRUNTIME140_1.dll              _CxxFrameHandler4                       
+  3)  VCRUNTIME140_1.dll              unknown                                 
+</Callstack>
+
