@@ -1,1 +1,0 @@
-*** Error: Abaqus Error: The following file(s) could not be located: mesh.inp*** Error: Abaqus Error: The following file(s) could not be located: mesh.inp

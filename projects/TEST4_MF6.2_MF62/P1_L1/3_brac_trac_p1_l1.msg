@@ -1,1 +1,0 @@
-*** Error: Abaqus Error: The following file(s) could not be located: 2_rev_p1_l1.odb*** Error: Abaqus Error: The following file(s) could not be located: 2_rev_p1_l1.odb

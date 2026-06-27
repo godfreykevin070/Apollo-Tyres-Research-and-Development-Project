@@ -1,1 +1,0 @@
-*** Error: Abaqus Error: The following file(s) could not be located: 3_brac_trac_p1_l1.odb*** Error: Abaqus Error: The following file(s) could not be located: 3_brac_trac_p1_l1.odb

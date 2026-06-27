@@ -1,0 +1,6 @@
+abaqus j=AXI cpus=
+abaqus j=rev oldj=AXI cpus=
+abaqus j=brake_trac oldj=rev cpus
+abaqus j=freeroll oldj=brake_trac cpus
+abaqus j=lateral_3deg oldj=freeroll cpus
+
