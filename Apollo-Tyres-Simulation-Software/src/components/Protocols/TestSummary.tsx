@@ -22,7 +22,10 @@ const TestSummary: React.FC<TestSummaryProps> = ({ protocol, projectId }) => {
   const loadSummary = async () => {
     setIsLoading(true);
     try {
-      const response = await api.get(`/get-${protocol.toLowerCase()}-summary`);
+      // Pass projectId as query parameter
+      const response = await api.get(`/get-${protocol.toLowerCase()}-summary`, {
+        params: { projectId }
+      });
       if (response.data) {
         setSummary(response.data);
       }

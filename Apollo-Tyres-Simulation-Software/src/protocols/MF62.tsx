@@ -1,10 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
-import ProtocolInput from '../components/Protocols/ProtocolInput';
-import TestSummary from '../components/Protocols/TestSummary';
-import { ArrowLeft, Save, Upload, FileText, Play } from 'lucide-react';
+import { ArrowLeft, Save, Upload } from 'lucide-react';
 
 interface ParameterData {
   p1: string;
@@ -27,13 +24,13 @@ interface ParameterData {
 const MF62: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
   const projectId = searchParams.get('projectId');
   
-  const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [meshFile, setMeshFile] = useState<File | null>(null);
+  const [protocolProjects, setProtocolProjects] = useState<any[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [parameters, setParameters] = useState<ParameterData>({
     p1: '', p2: '', p3: '',
     l1: '', l2: '', l3: '',
@@ -41,22 +38,21 @@ const MF62: React.FC = () => {
     rimWidth: '', rimDiameter: '', nominalWidth: '', outerDiameter: '',
     aspectRatio: ''
   });
+  const protocol = "MF62";
 
   useEffect(() => {
     if (projectId) {
-      loadSavedInputs();
+      loadInputs();
     }
   }, [projectId]);
 
-  const loadSavedInputs = async () => {
+  const loadInputs = async () => {
     try {
-      const response = await api.get(`/projects/${projectId}`);
-      if (response.data.project?.inputs) {
-        const inputs = response.data.project.inputs;
-        setParameters(prev => ({ ...prev, ...inputs }));
-      }
-    } catch (error) {
-      console.error('Error loading saved inputs:', error);
+      const projectsResponse = await api.get(`/projects/protocol/${protocol}`);
+      setProtocolProjects(projectsResponse.data.projects);
+
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -68,6 +64,23 @@ const MF62: React.FC = () => {
     if (e.target.files && e.target.files[0]) {
       setMeshFile(e.target.files[0]);
     }
+  };
+
+  const applySavedInputs = () => {
+    const selected = protocolProjects.find(
+        p => p.id === selectedProjectId
+    );
+
+    if (!selected) return;
+
+    let inputs = selected.inputs;
+
+    // Parse JSON if stored as string
+    if (typeof inputs === "string") {
+        inputs = JSON.parse(inputs);
+    }
+
+    setParameters(inputs);
   };
 
   const validateParameters = (): boolean => {
@@ -85,46 +98,79 @@ const MF62: React.FC = () => {
 
   const handleSubmit = async () => {
     if (!validateParameters()) return;
+
     if (!projectId) {
-      setError('Project ID is missing');
+      setError("Project ID is missing");
       return;
     }
 
     setIsSubmitting(true);
-    setError('');
+    setError("");
 
     try {
-      // Save inputs
-      await api.put(`/projects/${projectId}/inputs`, { inputs: parameters });
+      // 1. Save project inputs
+      await api.put(`/projects/${projectId}/inputs`, {
+        inputs: parameters,
+      });
 
-      // Upload mesh file if provided
+      // 2. Generate parameter files
+      await api.post("/generate-parameters", {
+          ...parameters,
+          protocol,
+          projectId: projectId,
+      });
+
+      // 3. Upload mesh file if selected
       if (meshFile) {
         const formData = new FormData();
-        formData.append('meshFile', meshFile);
-        await api.post('/upload-mesh-file', formData);
+
+        formData.append("meshFile", meshFile);
+        formData.append("projectId", projectId!);
+
+        await api.post("/upload-mesh-file", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
       }
 
-      // Generate parameters file
-      await api.post('/generate-parameters', {
-        ...parameters,
-        protocol: 'MF62'
+      // 4. Read MF5pt2.xlsx from protocol directory and store into mf52_data
+      const storeResponse = await api.post("/store-mf62-data");
+
+      if (!storeResponse.data.success) {
+        throw new Error("Failed to import Excel data.");
+      }
+
+      // 5. Copy scratch table -> project table
+      const matrixResponse = await api.post("/store-project-matrix", {
+        projectId: Number(projectId),
+        protocol: protocol,
       });
 
-      // Process Excel and create folders
-      const response = await api.post('/process-mf62', {
-        projectId,
+      if (!matrixResponse.data.success) {
+        throw new Error("Failed to save matrix data.");
+      }
+
+      // 6. Process project
+      const processResponse = await api.post("/process-mf62", {
+        projectId: Number(projectId),
         parameters,
-        protocol: 'MF62'
       });
 
-      if (response.data.success) {
+      if (processResponse.data.success) {
         navigate(`/select?projectId=${projectId}`);
       } else {
-        setError(response.data.message || 'Failed to process MF62 data');
+        setError(processResponse.data.message || "Failed to process MF62.");
       }
     } catch (error: any) {
-      console.error('Error submitting MF62:', error);
-      setError(error.response?.data?.message || 'An error occurred while processing');
+      console.error(error);
+
+      setError(
+        error.response?.data?.detail ||
+        error.response?.data?.message ||
+        error.message ||
+        "An unexpected error occurred."
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -186,13 +232,6 @@ const MF62: React.FC = () => {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => window.location.reload()}
-              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
-            >
-              <FileText className="w-4 h-4" />
-              Refresh
-            </button>
             <button
               onClick={handleSubmit}
               disabled={isSubmitting}
@@ -271,10 +310,48 @@ const MF62: React.FC = () => {
             </div>
           </div>
 
-          {/* Test Summary */}
+          {/* Apply Inputs */}
           <div className="lg:col-span-1">
-            <TestSummary protocol="MF62" projectId={projectId} />
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 top-6">
+              <h2 className="text-xl font-semibold mb-6">
+                Project Details
+              </h2>
+              <div className="mt-6">
+                <label className="block text-sm font-medium mb-2">
+                    Previous MF62 Projects
+                </label>
+                <select
+                    value={selectedProjectId ?? ""}
+                    onChange={(e)=>
+                        setSelectedProjectId(Number(e.target.value))
+                    }
+                    className="w-full border rounded-lg p-2"
+                >
+                    <option value="">
+                        Select Project
+                    </option>
+                    {protocolProjects.map(project => (
+                        <option
+                            key={project.id}
+                            value={project.id}
+                        >
+                            {project.project_name}
+                        </option>
+                    ))}
+                </select>
+            </div>
+              <div className="mt-8">
+                <button
+                  onClick={applySavedInputs}
+                  disabled={!selectedProjectId}
+                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white rounded-lg py-3"
+                >
+                  Apply Saved Inputs
+                </button>
+              </div>
+            </div>
           </div>
+
         </div>
       </main>
     </div>

@@ -1,9 +1,12 @@
-from fastapi import APIRouter, Depends, Request, HTTPException
+from fastapi import APIRouter, Depends, Request, HTTPException, UploadFile, File
 from typing import Optional
+import os
 
 from database import db
 from auth import get_current_user, get_current_manager
 from routes import auth, projects, simulation, activity, tydex
+
+from config import config
 
 router = APIRouter()
 
@@ -149,11 +152,7 @@ async def create_protocol_folders_compat(request: Request, user=Depends(get_curr
 @router.post("/upload-mesh-file")
 async def upload_mesh_file_compat(request: Request, user=Depends(get_current_user)):
     """Compatibility endpoint for /api/upload-mesh-file"""
-    from services.file_service import FileService
-    from fastapi import UploadFile, File
-    import shutil
-    import os
-    
+
     # Get the uploaded file
     form = await request.form()
     mesh_file = form.get('meshFile')
@@ -161,8 +160,25 @@ async def upload_mesh_file_compat(request: Request, user=Depends(get_current_use
     if not mesh_file:
         raise HTTPException(400, "No file uploaded")
     
-    # Save to a temporary location
-    upload_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads')
+    project_id = form.get("projectId")
+    if not project_id:
+        raise HTTPException(status_code=400, detail="Project ID is required")
+
+    project_id = int(project_id)
+    project_name, protocol = await db.execute_one(
+        "SELECT project_name, protocol FROM projects WHERE id = $1",
+        project_id
+    )
+    
+    if not all([project_name, protocol]):
+        raise HTTPException(400, "Missing required parameters")
+
+    combined_name = f"{project_name}_{protocol}"
+    upload_dir = os.path.join(
+        os.path.dirname(config.TEMPLATES_DIR),
+        "projects",
+        combined_name,
+    )
     os.makedirs(upload_dir, exist_ok=True)
     
     file_path = os.path.join(upload_dir, mesh_file.filename)

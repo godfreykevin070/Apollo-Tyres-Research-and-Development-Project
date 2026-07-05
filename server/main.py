@@ -9,6 +9,7 @@ from config import config
 from database import db
 from routes import auth, projects, simulation, activity, tydex, manager, excel, compat
 
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,

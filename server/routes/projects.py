@@ -195,6 +195,50 @@ async def update_project_status(project_id: int, request: Request, user=Depends(
     result = await db.execute_one(query, status, project_id)
     return {"success": True, "project": dict(result)}
 
+
+@router.get("/{project_id}/run-status")
+async def get_run_status(
+    project_id: int,
+    user=Depends(get_current_user)
+):
+    # verify project exists
+    project = await db.execute_one(
+        """
+        SELECT *
+        FROM projects
+        WHERE id = $1
+        """,
+        project_id
+    )
+
+    if not project:
+        raise HTTPException(404, "Project not found")
+    
+    protocol = project["protocol"].lower()
+
+    rows = await db.execute(
+        f"""
+        SELECT
+            number_of_runs,
+            tests,
+            run_status,
+            run_start_time,
+            run_end_time,
+            run_duration_seconds,
+            error_message,
+            odb_path
+        FROM {protocol}_project_data
+        WHERE project_id = $1
+        ORDER BY number_of_runs
+        """,
+        project_id
+    )
+
+    return {
+        "success": True,
+        "runs": [dict(r) for r in rows]
+    }
+
 @router.delete("/{project_id}")
 async def delete_project(project_id: int, user=Depends(get_current_user)):
     """Delete a project (and cascade to related data)"""
@@ -374,3 +418,62 @@ async def save_draft(project_id: int, protocol: str, request: Request, user=Depe
     )
     
     return {"ok": True, "draft": dict(result) if result else None}
+
+@router.get("/defaults/{protocol}")
+async def get_default_inputs(protocol: str, user=Depends(get_current_user)):
+    """
+    Returns the latest saved inputs for the logged in user
+    from the same protocol.
+    """
+
+    row = await db.execute_one(
+        """
+        SELECT inputs
+        FROM projects
+        WHERE
+            protocol = $1
+            AND user_email = $2
+            AND inputs IS NOT NULL
+            AND inputs <> '{}'::jsonb
+        ORDER BY updated_at DESC
+        LIMIT 1
+        """,
+        protocol,
+        user["email"]
+    )
+
+    if not row:
+        return {
+            "success": True,
+            "inputs": {}
+        }
+
+    return {
+        "success": True,
+        "inputs": row["inputs"]
+    }
+
+@router.get("/protocol/{protocol}")
+async def get_protocol_projects(protocol: str, user=Depends(get_current_user)):
+    rows = await db.execute(
+        """
+        SELECT
+            id,
+            project_name,
+            tyre_size,
+            updated_at,
+            inputs
+        FROM projects
+        WHERE
+            protocol = $1
+            AND user_email = $2
+        ORDER BY updated_at DESC
+        """,
+        protocol,
+        user["email"]
+    )
+
+    return {
+        "success": True,
+        "projects": [dict(r) for r in rows]
+    }

@@ -89,25 +89,26 @@ async def save_tydex_file(project_id: int, request: Request, user=Depends(get_cu
 async def generate_tydex(request: Request, user=Depends(get_current_user)):
     """Generate Tydex file from template and ODB data"""
     data = await request.json()
-    protocol = data.get('protocol')
-    project_name = data.get('projectName')
-    row_data = data.get('rowData')
-    
-    if not all([protocol, project_name, row_data]):
-        raise HTTPException(400, "protocol, projectName, and rowData required")
-    
-    # Check permission
+    project_id = int(data.get('projectId'))
     project = await db.execute_one(
-        "SELECT id FROM projects WHERE project_name = $1",
-        project_name
+        "SELECT project_name, protocol FROM projects WHERE id = $1",
+        project_id
     )
     if not project:
         raise HTTPException(404, "Project not found")
+    
+    project_name = project["project_name"]
+    protocol = project["protocol"]
+    row_data = data.get('rowData')
+    
+    if not all([protocol, project_id, row_data]):
+        raise HTTPException(400, "protocol, projectName, and rowData required")
+    
     if user['role'] not in ['manager', 'admin']:
         # Check if user owns this project
         project_owner = await db.execute_one(
-            "SELECT user_email FROM projects WHERE project_name = $1",
-            project_name
+            "SELECT user_email FROM projects WHERE id = $1",
+            project_id
         )
         if project_owner and project_owner['user_email'] != user['email']:
             raise HTTPException(403, "Forbidden")

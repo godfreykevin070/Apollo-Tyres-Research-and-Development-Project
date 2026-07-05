@@ -8,6 +8,7 @@ This repository contains the Apollo Tyres Simulation Software, consisting of a R
 Apollo-Tyres-Research-and-Development-Project/
 │
 ├── Apollo-Tyres-Simulation-Software/   # React + TypeScript + Tailwind CSS frontend
+├── database/                           # Postgresql Database 
 ├── server/                             # Python backend
 └── abaqus_input/                       # Abaqus input (.inp) and related files
 ```
@@ -69,9 +70,18 @@ apollo_tyres
 Then initialize the database:
 
 ```bash
-cd server
-python -m database.py
+cd database
+python -m setup_database.py
 ```
+
+Then assign the secret key and database password in server:
+
+```bash
+python -c "import secrets; print('JWT_SECRET=' + secrets.token_hex(32))"
+```
+replace the secret key in the .env file
+
+and finally, have the templates folder and the protocols folder with the respective files, in the same base directory
 
 ---
 

@@ -29,13 +29,35 @@ async def get_row_data(protocol: str, runNumber: int, user=Depends(get_current_u
     if not table_name:
         raise HTTPException(400, "Invalid protocol")
     
-    query = f"""
-        SELECT p, l, job, old_job, template_tydex, tydex_name, 
-               slip_angle, slip_ratio, inclination_angle,
-               foltran, python_script
-        FROM {table_name}
-        WHERE number_of_runs = $1
-    """
+    elif table_name == "mf52_project_data":
+        query = f"""
+            SELECT number_of_runs, p, l, job, old_job, template_tydex, tydex_name,
+                slip_angle, slip_ratio, inclination_angle, foltran, python_script
+            FROM {table_name}
+            WHERE number_of_runs = $1
+        """
+    elif table_name == "mf62_project_data":
+        query = f"""
+            SELECT number_of_runs, p, l, job, old_job, template_tydex, tydex_name, inflation_pressure,
+                slip_angle, slip_ratio, inclination_angle, foltran, python_script
+            FROM {table_name}
+            WHERE number_of_runs = $1
+        """
+    elif table_name == "ftire_project_data":
+        query = f"""
+            SELECT number_of_runs, tests, loads, inflation_pressure, test_velocity, longitudinal_slip, 
+            slip_angle, inclination_angle, cleat_orientation, job, old_job, template_tydex, 
+            tydex_name, p, l
+            FROM {table_name}
+            WHERE number_of_runs = $1
+        """
+    elif table_name == "cdtire_project_data":
+        query = f"""
+            SELECT number_of_runs, p, l, job, old_job, template_tydex, tydex_name, velocity,
+                slip_angle, slip_range, cleat, foltran, python_script
+            FROM {table_name}
+            WHERE number_of_runs = $1
+        """
     
     row = await db.execute_one(query, runNumber)
     if not row:
@@ -50,17 +72,23 @@ async def resolve_dependencies(
 ):
     """Resolve job dependencies and run Abaqus simulation"""
     data = await request.json()
-    project_name = data.get('projectName')
-    protocol = data.get('protocol')
+    print("Received data:", data)
+    
+    project_id = int(data.get('projectId'))
     run_number = data.get('runNumber')
+
+    project_name, protocol = await db.execute_one(
+        "SELECT project_name, protocol FROM projects WHERE id = $1",
+        project_id
+    )
     
     if not all([project_name, protocol, run_number]):
         raise HTTPException(400, "Missing required parameters")
     
     # Check if user has permission for this project
     project = await db.execute_one(
-        "SELECT user_email FROM projects WHERE project_name = $1",
-        project_name
+        "SELECT user_email FROM projects WHERE id = $1",
+        project_id
     )
     if not project:
         raise HTTPException(404, "Project not found")
@@ -212,8 +240,29 @@ async def generate_parameters(request: Request, user=Depends(get_current_user)):
     
     referer = request.headers.get('referer', '')
     file_service = FileService()
-    
-    result = file_service.generate_parameters(data, referer)
+
+    project_id = int(data.get("projectId"))
+    project = await db.execute_one(
+        "SELECT * FROM projects WHERE id = $1",
+        project_id
+    )
+
+    if not project:
+        raise HTTPException(404, "Project not found")
+
+    project_name = project["project_name"]
+    protocol = data["protocol"]
+
+    result = file_service.generate_parameters(
+        data=data,
+        referer=referer,
+        project=project
+    )
+
+    file_service.update_project_files(
+        project_name,
+        protocol,
+    )
     return result
 
 @router.post("/create-protocol-folders")

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import api from '../services/api';
-import TestSummary from '../components/Protocols/TestSummary';
 import { ArrowLeft, Save, Upload } from 'lucide-react';
 
 interface ParameterData {
@@ -252,9 +251,6 @@ const Custom: React.FC = () => {
             </div>
           </div>
 
-          <div className="lg:col-span-1">
-            <TestSummary protocol="Custom" projectId={projectId} />
-          </div>
         </div>
       </main>
     </div>

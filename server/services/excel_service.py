@@ -22,53 +22,104 @@ class ExcelService:
     
     def read_excel_data(self, file_path: str, sheet_name: Optional[str] = None) -> List[Dict[str, Any]]:
         """
-        Read Excel file and return data as list of dictionaries
-        
-        Args:
-            file_path: Path to Excel file
-            sheet_name: Name of sheet to read (default: first sheet)
-        
+        Read Excel file and automatically detect the header row.
+
         Returns:
-            List of dictionaries with column headers as keys
+            List of dictionaries where keys are the Excel column headers.
         """
+
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"Excel file not found: {file_path}")
-        
+
         workbook = openpyxl.load_workbook(file_path, data_only=True)
-        
+
         if sheet_name and sheet_name in workbook.sheetnames:
             sheet = workbook[sheet_name]
         else:
             sheet = workbook.active
-        
-        data = []
+
         rows = list(sheet.iter_rows(values_only=True))
-        
+
         if not rows:
-            return data
-        
-        # Get headers from first row
-        headers = [str(cell) if cell is not None else f"Column_{i}" for i, cell in enumerate(rows[0])]
-        
-        # Process data rows
-        for row in rows[1:]:
-            if all(cell is None or str(cell).strip() == '' for cell in row):
-                continue  # Skip empty rows
-            
+            workbook.close()
+            return []
+
+        header_row_index = None
+
+        possible_headers = [
+            "number of runs",
+            "number of tests",
+            "no of tests",
+            "tests",
+            "test name"
+        ]
+
+        for idx, row in enumerate(rows):
+            row_text = " ".join(
+                str(cell).strip().lower()
+                for cell in row
+                if cell is not None
+            )
+
+            if any(header in row_text for header in possible_headers):
+                header_row_index = idx
+                break
+
+        # Fallback to first row
+        if header_row_index is None:
+            header_row_index = 0
+
+        headers = []
+
+        for i, cell in enumerate(rows[header_row_index]):
+            if cell is None:
+                headers.append(f"col_{i}")
+            else:
+                header = str(cell).strip()
+
+                header = (
+                    header.replace("\n", " ")
+                        .replace("[", "")
+                        .replace("]", "")
+                        .replace("(", "")
+                        .replace(")", "")
+                        .replace("%", "")
+                        .replace("°", "")
+                        .replace("/", "_")
+                        .replace("-", "_")
+                        .replace(" ", "_")
+                        .lower()
+                )
+
+                headers.append(header)
+
+        data = []
+
+        for row in rows[header_row_index + 1:]:
+
+            # Skip empty rows
+            if all(cell is None or str(cell).strip() == "" for cell in row):
+                continue
+
             row_data = {}
+
             for i, cell in enumerate(row):
-                if i < len(headers):
-                    key = headers[i]
-                    value = cell if cell is not None else ''
-                    # Convert to string if needed
-                    if isinstance(value, (int, float)):
-                        value = str(value)
-                    row_data[key] = value
-            
-            if any(row_data.values()):  # Only add if there's at least one non-empty value
+                if i >= len(headers):
+                    continue
+
+                value = cell
+
+                if value is None:
+                    value = ""
+
+                row_data[headers[i]] = value
+
+            # Skip completely empty rows
+            if any(v != "" for v in row_data.values()):
                 data.append(row_data)
-        
+
         workbook.close()
+
         return data
     
     def write_excel_data(self, file_path: str, data: List[Dict[str, Any]], sheet_name: str = "Sheet1"):

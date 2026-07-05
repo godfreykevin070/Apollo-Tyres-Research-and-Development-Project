@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import { 
   ArrowLeft, 
@@ -9,11 +8,9 @@ import {
   CheckCircle, 
   Clock, 
   AlertCircle,
-  Download,
   RefreshCw,
   Eye
 } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
 
 interface RunData {
   number_of_runs: number;
@@ -33,7 +30,6 @@ interface RunData {
 const Select: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
   const projectId = searchParams.get('projectId');
   
   const [runs, setRuns] = useState<RunData[]>([]);
@@ -55,6 +51,7 @@ const Select: React.FC = () => {
     setIsLoading(true);
     try {
       const response = await api.get(`/projects/${projectId}/matrix`);
+
       if (response.data.success) {
         setRuns(response.data.rows || []);
       } else {
@@ -71,15 +68,33 @@ const Select: React.FC = () => {
   const loadRunStatuses = async () => {
     try {
       const response = await api.get(`/projects/${projectId}/run-status`);
+
       if (response.data.success) {
-        const statusMap = response.data.statuses || {};
-        setRuns(prev => prev.map(run => ({
-          ...run,
-          status: statusMap[run.number_of_runs] || 'pending'
-        })));
+        const runStatuses = response.data.runs; 
+
+        setRuns(prev =>
+          prev.map(run => {
+            const latest = runStatuses.find(
+              (r: any) => r.number_of_runs === run.number_of_runs
+            );
+
+            return latest
+              ? {
+                  ...run,
+                  status:
+                    latest.run_status === "not_started"
+                      ? "pending"
+                      : latest.run_status,
+                  run_start_time: latest.run_start_time,
+                  run_end_time: latest.run_end_time,
+                  run_duration_seconds: latest.run_duration_seconds,
+                }
+              : run;
+          })
+        );
       }
     } catch (error) {
-      console.error('Error loading run statuses:', error);
+      console.error("Error loading run statuses:", error);
     }
   };
 
@@ -90,8 +105,6 @@ const Select: React.FC = () => {
     try {
       const response = await api.post('/resolve-job-dependencies', {
         projectId,
-        projectName: runs.find(r => r.number_of_runs === runNumber)?.tests,
-        protocol: 'MF62', // This should come from the project
         runNumber
       });
 
@@ -104,7 +117,7 @@ const Select: React.FC = () => {
         ));
         
         // Poll for status updates
-        pollRunStatus(runNumber);
+        pollRunStatus();
       } else {
         setError(response.data.message || 'Failed to start simulation');
         setRuns(prev => prev.map(run => 
@@ -114,6 +127,9 @@ const Select: React.FC = () => {
         ));
       }
     } catch (error: any) {
+      console.log(error.response?.status);
+      console.log(error.response?.data);
+      console.log(error.response?.headers);
       console.error('Error running simulation:', error);
       setError(error.response?.data?.message || 'Failed to start simulation');
       setRuns(prev => prev.map(run => 
@@ -130,32 +146,59 @@ const Select: React.FC = () => {
     }
   };
 
-  const pollRunStatus = async (runNumber: number) => {
+  const pollRunStatus = async () => {
     const maxAttempts = 60;
     let attempts = 0;
 
     const poll = async () => {
       try {
-        const response = await api.get(`/projects/${projectId}/run-status/${runNumber}`);
-        if (response.data.success) {
-          const status = response.data.status;
-          setRuns(prev => prev.map(run => 
-            run.number_of_runs === runNumber 
-              ? { ...run, status } 
-              : run
-          ));
+        const response = await api.get(
+          `/projects/${projectId}/run-status`
+        );
 
-          if (status === 'completed' || status === 'failed') {
-            return;
+        if (response.data.success) {
+          const updatedRuns = response.data.runs;
+
+          setRuns(prev =>
+            prev.map(run => {
+              const latest = updatedRuns.find(
+                (r: any) => r.number_of_runs === run.number_of_runs
+              );
+
+              return latest
+                ? {
+                    ...run,
+                    status:
+                      latest.run_status === "not_started"
+                        ? "pending"
+                        : latest.run_status,
+                    run_start_time: latest.run_start_time,
+                    run_end_time: latest.run_end_time,
+                    run_duration_seconds: latest.run_duration_seconds,
+                  }
+                : run;
+            })
+          );
+
+          const allFinished = updatedRuns.every(
+            (r: any) =>
+              r.run_status === "completed" ||
+              r.run_status === "failed" ||
+              r.run_status === "not_started"
+          );
+
+          if (!allFinished && attempts < maxAttempts) {
+            attempts++;
+            setTimeout(poll, 5000);
           }
         }
-      } catch (error) {
-        console.error('Error polling status:', error);
-      }
+      } catch (err) {
+        console.error("Polling failed:", err);
 
-      attempts++;
-      if (attempts < maxAttempts) {
-        setTimeout(poll, 5000);
+        if (attempts < maxAttempts) {
+          attempts++;
+          setTimeout(poll, 5000);
+        }
       }
     };
 
@@ -170,19 +213,25 @@ const Select: React.FC = () => {
       const response = await api.post('/generate-tydex', {
         projectId,
         runNumber,
-        protocol: 'MF62',
         rowData: run
       });
 
       if (response.data.success) {
         alert('Tydex file generated successfully');
-        await loadRuns();
+        await loadRunStatuses();
       } else {
         setError(response.data.message || 'Failed to generate Tydex');
       }
     } catch (error: any) {
-      console.error('Error generating Tydex:', error);
-      setError(error.response?.data?.message || 'Failed to generate Tydex');
+      console.error("Status:", error.response?.status);
+      console.error("Data:", error.response?.data);
+      console.error("Headers:", error.response?.headers);
+
+      setError(
+        error.response?.data?.detail ||
+        error.response?.data?.message ||
+        "Failed to generate Tydex"
+      );
     }
   };
 
@@ -232,7 +281,7 @@ const Select: React.FC = () => {
           </div>
           <div className="flex items-center gap-3">
             <button
-              onClick={loadRuns}
+              onClick={loadRunStatuses}
               className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
             >
               <RefreshCw className="w-4 h-4" />

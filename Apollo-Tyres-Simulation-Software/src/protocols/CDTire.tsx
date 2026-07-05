@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import api from '../services/api';
-import TestSummary from '../components/Protocols/TestSummary';
 import { ArrowLeft, Save, Upload } from 'lucide-react';
 
 interface ParameterData {
@@ -25,32 +24,32 @@ const CDTire: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const projectId = searchParams.get('projectId');
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [meshFile, setMeshFile] = useState<File | null>(null);
+  const [protocolProjects, setProtocolProjects] = useState<any[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [parameters, setParameters] = useState<ParameterData>({
     p1: '', l1: '', l2: '', l3: '', l4: '', l5: '',
     vel: '', ia: '', sr: '',
     rimWidth: '', rimDiameter: '', nominalWidth: '', outerDiameter: '',
     aspectRatio: ''
   });
+  const protocol = "CDTire";
 
   useEffect(() => {
     if (projectId) {
-      loadSavedInputs();
+      loadInputs();
     }
   }, [projectId]);
 
-  const loadSavedInputs = async () => {
+  const loadInputs = async () => {
     try {
-      const response = await api.get(`/projects/${projectId}`);
-      if (response.data.project?.inputs) {
-        const inputs = response.data.project.inputs;
-        setParameters(prev => ({ ...prev, ...inputs }));
-      }
-    } catch (error) {
-      console.error('Error loading saved inputs:', error);
+      const projectsResponse = await api.get(`/projects/protocol/${protocol}`);
+      setProtocolProjects(projectsResponse.data.projects);
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -64,10 +63,19 @@ const CDTire: React.FC = () => {
     }
   };
 
+  const applySavedInputs = () => {
+    const selected = protocolProjects.find(p => p.id === selectedProjectId);
+    if (!selected) return;
+    let inputs = selected.inputs;
+    if (typeof inputs === "string") {
+      inputs = JSON.parse(inputs);
+    }
+    setParameters(inputs);
+  };
+
   const validateParameters = (): boolean => {
-    const required = ['p1', 'l1', 'rimWidth', 'rimDiameter'];
+    const required = ['p1', 'l1', 'rimWidth', 'rimDiameter', 'nominalWidth', 'outerDiameter', 'aspectRatio'];
     const missing = required.filter(key => !parameters[key as keyof ParameterData]);
-    
     if (missing.length > 0) {
       setError(`Please fill in all required fields: ${missing.join(', ')}`);
       return false;
@@ -79,41 +87,61 @@ const CDTire: React.FC = () => {
   const handleSubmit = async () => {
     if (!validateParameters()) return;
     if (!projectId) {
-      setError('Project ID is missing');
+      setError("Project ID is missing");
       return;
     }
 
     setIsSubmitting(true);
-    setError('');
+    setError("");
 
     try {
       await api.put(`/projects/${projectId}/inputs`, { inputs: parameters });
 
+      await api.post("/generate-parameters", {
+        ...parameters,
+        protocol,
+        projectId: projectId,
+      });
+
       if (meshFile) {
         const formData = new FormData();
-        formData.append('meshFile', meshFile);
-        await api.post('/upload-mesh-file', formData);
+        formData.append("meshFile", meshFile);
+        formData.append("projectId", projectId!);
+        await api.post("/upload-mesh-file", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
       }
 
-      await api.post('/generate-parameters', {
-        ...parameters,
-        protocol: 'CDTire'
-      });
+      const storeResponse = await api.post("/store-cdtire-data");
+      if (!storeResponse.data.success) {
+        throw new Error("Failed to import Excel data.");
+      }
 
-      const response = await api.post('/process-cdtire', {
-        projectId,
+      const matrixResponse = await api.post("/store-project-matrix", {
+        projectId: Number(projectId),
+        protocol: protocol,
+      });
+      if (!matrixResponse.data.success) {
+        throw new Error("Failed to save matrix data.");
+      }
+
+      const processResponse = await api.post("/process-cdtire", {
+        projectId: Number(projectId),
         parameters,
-        protocol: 'CDTire'
       });
-
-      if (response.data.success) {
+      if (processResponse.data.success) {
         navigate(`/select?projectId=${projectId}`);
       } else {
-        setError(response.data.message || 'Failed to process CDTire data');
+        setError(processResponse.data.message || "Failed to process CDTire.");
       }
     } catch (error: any) {
-      console.error('Error submitting CDTire:', error);
-      setError(error.response?.data?.message || 'An error occurred while processing');
+      console.error(error);
+      setError(
+        error.response?.data?.detail ||
+        error.response?.data?.message ||
+        error.message ||
+        "An unexpected error occurred."
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -121,27 +149,37 @@ const CDTire: React.FC = () => {
 
   const parameterGroups = [
     {
-      title: 'Mandatory Parameters',
+      title: 'Pressure',
       fields: [
-        { key: 'p1', label: 'Pressure', placeholder: 'Enter pressure value in psi', required: true },
-        { key: 'l1', label: 'Load 1', placeholder: 'Enter L1 value in Kg', required: true },
-        { key: 'rimWidth', label: 'Rim Width', placeholder: 'Enter RW value in mm', required: true },
-        { key: 'rimDiameter', label: 'Rim Diameter', placeholder: 'Enter RD value in mm', required: true },
+        { key: 'p1', label: 'P1', placeholder: 'Enter P1 value in psi' },
       ]
     },
     {
-      title: 'Optional Parameters',
+      title: 'Load',
       fields: [
-        { key: 'l2', label: 'Load 2', placeholder: 'Enter L2 value in Kg' },
-        { key: 'l3', label: 'Load 3', placeholder: 'Enter L3 value in Kg' },
-        { key: 'l4', label: 'Load 4', placeholder: 'Enter L4 value in Kg' },
-        { key: 'l5', label: 'Load 5', placeholder: 'Enter L5 value in Kg' },
-        { key: 'vel', label: 'Test Speed', placeholder: 'Enter velocity in kmph' },
-        { key: 'ia', label: 'Inclination Angle', placeholder: 'Enter IA value in degree' },
-        { key: 'sr', label: 'Slip Ratio', placeholder: 'Enter SR value in %' },
-        { key: 'nominalWidth', label: 'Nominal Width', placeholder: 'Enter NW value in mm' },
-        { key: 'outerDiameter', label: 'Outer Diameter', placeholder: 'Enter OD value in mm' },
-        { key: 'aspectRatio', label: 'Aspect Ratio', placeholder: 'Enter AR value in %' },
+        { key: 'l1', label: 'L1', placeholder: 'Enter L1 value in Kg' },
+        { key: 'l2', label: 'L2', placeholder: 'Enter L2 value in Kg' },
+        { key: 'l3', label: 'L3', placeholder: 'Enter L3 value in Kg' },
+        { key: 'l4', label: 'L4', placeholder: 'Enter L4 value in Kg' },
+        { key: 'l5', label: 'L5', placeholder: 'Enter L5 value in Kg' },
+      ]
+    },
+    {
+      title: 'Speed & Angles',
+      fields: [
+        { key: 'vel', label: 'VEL', placeholder: 'Enter velocity in kmph' },
+        { key: 'ia', label: 'IA', placeholder: 'Enter IA value in degree' },
+        { key: 'sr', label: 'SR', placeholder: 'Enter SR value in %' },
+      ]
+    },
+    {
+      title: 'Tyre Dimensions',
+      fields: [
+        { key: 'rimWidth', label: 'RW', placeholder: 'Enter RW value in mm' },
+        { key: 'rimDiameter', label: 'RD', placeholder: 'Enter RD value in mm' },
+        { key: 'nominalWidth', label: 'NW', placeholder: 'Enter NW value in mm' },
+        { key: 'outerDiameter', label: 'OD', placeholder: 'Enter OD value in mm' },
+        { key: 'aspectRatio', label: 'AR', placeholder: 'Enter AR value in %' },
       ]
     }
   ];
@@ -199,7 +237,6 @@ const CDTire: React.FC = () => {
                     <div key={field.key}>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         {field.label}
-                        {<span className="text-red-500 ml-1">*</span>}
                       </label>
                       <input
                         type="text"
@@ -232,13 +269,42 @@ const CDTire: React.FC = () => {
                   <span className="text-sm text-gray-600">
                     {meshFile ? meshFile.name : 'Click to upload mesh file (.inp)'}
                   </span>
+                  <span className="text-xs text-gray-400">Drag and drop or click to browse</span>
                 </label>
               </div>
             </div>
           </div>
 
           <div className="lg:col-span-1">
-            <TestSummary protocol="CDTire" projectId={projectId} />
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 top-6">
+              <h2 className="text-xl font-semibold mb-6">Project Details</h2>
+              <div className="mt-6">
+                <label className="block text-sm font-medium mb-2">
+                  Previous CDTire Projects
+                </label>
+                <select
+                  value={selectedProjectId ?? ""}
+                  onChange={(e) => setSelectedProjectId(Number(e.target.value))}
+                  className="w-full border rounded-lg p-2"
+                >
+                  <option value="">Select Project</option>
+                  {protocolProjects.map(project => (
+                    <option key={project.id} value={project.id}>
+                      {project.project_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="mt-8">
+                <button
+                  onClick={applySavedInputs}
+                  disabled={!selectedProjectId}
+                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white rounded-lg py-3"
+                >
+                  Apply Saved Inputs
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </main>

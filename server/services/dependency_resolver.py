@@ -41,16 +41,78 @@ class DependencyResolver:
         table_name = self._get_table_name(protocol)
         if not table_name:
             return None
-        
-        query = f"""
-            SELECT number_of_runs, p, l, job, old_job, template_tydex, tydex_name,
-                   slip_angle, slip_ratio, inclination_angle, foltran, python_script
-            FROM {table_name}
-            WHERE number_of_runs = $1
-        """
+        elif table_name == "mf52_project_data":
+            query = f"""
+                SELECT number_of_runs, p, l, job, old_job, template_tydex, tydex_name,
+                    slip_angle, slip_ratio, inclination_angle, foltran, python_script
+                FROM {table_name}
+                WHERE number_of_runs = $1
+            """
+        elif table_name == "mf62_project_data":
+            query = f"""
+                SELECT number_of_runs, p, l, job, old_job, template_tydex, tydex_name, inflation_pressure,
+                    slip_angle, slip_ratio, inclination_angle, foltran, python_script
+                FROM {table_name}
+                WHERE number_of_runs = $1
+            """
+        elif table_name == "ftire_project_data":
+            query = f"""
+                SELECT number_of_runs, tests, loads, inflation_pressure, test_velocity, longitudinal_slip, 
+                slip_angle, inclination_angle, cleat_orientation, job, old_job, template_tydex, 
+                tydex_name, p, l
+                FROM {table_name}
+                WHERE number_of_runs = $1
+            """
+        elif table_name == "cdtire_project_data":
+            query = f"""
+                SELECT number_of_runs, p, l, job, old_job, template_tydex, tydex_name, velocity,
+                    slip_angle, slip_range, cleat, foltran, python_script
+                FROM {table_name}
+                WHERE number_of_runs = $1
+            """
         
         row = await db.execute_one(query, run_number)
         return dict(row) if row else None
+    
+    async def _update_run_status(
+        self,
+        protocol: str,
+        run_number: int,
+        status: str,
+        error_message: str = None,
+        odb_path: str = None,
+    ):
+        table_name = self._get_table_name(protocol)
+
+        query = f"""
+        UPDATE {table_name}
+        SET
+            run_status = $1::varchar,
+            run_start_time = CASE
+                WHEN $1::varchar = 'running'::varchar
+                THEN CURRENT_TIMESTAMP
+                ELSE run_start_time
+            END,
+            run_end_time = CASE
+                WHEN $1::varchar IN (
+                    'completed'::varchar,
+                    'failed'::varchar
+                )
+                THEN CURRENT_TIMESTAMP
+                ELSE run_end_time
+            END,
+            error_message = $2,
+            odb_path = $3
+        WHERE number_of_runs = $4
+        """
+
+        await db.execute(
+            query,
+            status,
+            error_message,
+            odb_path,
+            run_number,
+        )
     
     async def _check_odb_exists(self, project_name: str, protocol: str, 
                                  folder_name: str, job_name: str) -> bool:
@@ -121,6 +183,12 @@ class DependencyResolver:
         # Get row data
         row_data = await self._get_row_data(protocol, run_number)
         if not row_data:
+            await self._update_run_status(
+                protocol,
+                run_number,
+                "failed",
+                "Row data not found"
+            )
             return {
                 'success': False,
                 'message': f'Row data not found for run {run_number}'
@@ -150,10 +218,17 @@ class DependencyResolver:
             logger.info(f"ODB already exists for {job_name}, skipping")
             if progress_callback:
                 await progress_callback(run_number, 'done', 100, f"Job {job_name} already completed")
+            
+            await self._update_run_status(
+                protocol,
+                run_number,
+                "completed"
+            )
+
             return {
-                'success': True,
-                'message': f'ODB already exists for {job_name}',
-                'skipped': True
+                "success": True,
+                "message": f"ODB already exists for {job_name}",
+                "skipped": True
             }
         
         # Determine job type
@@ -202,15 +277,19 @@ class DependencyResolver:
                 logger.warning(f"Created empty input file at {input_file_path}")
         
         abaqus_config = {
-            'job_name': job_name,
-            'input_file': f"{job_name}.inp",
-            'old_job': old_job if old_job and old_job != '-' else None,
-            'user_subroutine': user_subroutine if user_subroutine and user_subroutine != '-' else None,
-            'cpus': self._determine_cpus(row_data),
-            'ask_del': 'no',
-            'abaqus_exe': self._determine_abaqus_exe(row_data, user_subroutine),
-            'folder_path': folder_path,
-            'run_number': run_number,
+            "job_name": job_name,
+            "input_file": f"{job_name}.inp",
+            "old_job": old_job if old_job and old_job != "-" else None,
+            "user_subroutine": user_subroutine if user_subroutine and user_subroutine != "-" else None,
+
+            "python_script": row_data.get("python_script"),
+            "speed_var": row_data.get("velocity"),
+
+            "cpus": self._determine_cpus(row_data),
+            "ask_del": "no",
+            "abaqus_exe": self._determine_abaqus_exe(row_data, user_subroutine),
+            "folder_path": folder_path,
+            "run_number": run_number,
         }
         
         # Execute the job
@@ -219,16 +298,36 @@ class DependencyResolver:
         if progress_callback:
             await progress_callback(run_number, 'running', 5, f"Running Abaqus: {job_name}")
         
+        await self._update_run_status(
+            protocol,
+            run_number,
+            "running"
+        )
+        
         result = await self._run_job(abaqus_config, progress_callback)
         
         # Check if ODB was created
-        if result.get('success'):
-            odb_exists = await self._check_odb_exists(project_name, protocol, folder_name, job_name)
-            if not odb_exists:
-                logger.warning(f"ODB file not found after job completion: {job_name}")
-                result['success'] = False
-                result['error'] = 'ODB file not found after job execution'
-        
+        if result.get("success"):
+            odb_path = os.path.join(
+                folder_path,
+                f"{job_name}.odb"
+            )
+
+            await self._update_run_status(
+                protocol,
+                run_number,
+                "completed",
+                odb_path=odb_path
+            )
+
+        else:
+            await self._update_run_status(
+                protocol,
+                run_number,
+                "failed",
+                error_message=result.get("error") or result.get("stderr")
+            )
+
         return result
     
     async def _find_run_number_by_job(self, protocol: str, job_name: str) -> Optional[int]:
@@ -251,7 +350,7 @@ class DependencyResolver:
     def _determine_cpus(self, row_data: Dict[str, Any]) -> int:
         """Determine CPU count for the job. Max 4 for student version."""
         # Student version is limited to 4 CPUs
-        base_cpus = 4
+        base_cpus = 1
         
         # Could add logic to increase if needed, but student version caps at 4
         return base_cpus
@@ -263,4 +362,4 @@ class DependencyResolver:
         if user_subroutine or (row_data.get('foltran') and row_data['foltran'] != '-'):
             # Try to use the version that supports fortran
             return 'abq2024hf5f'
-        return 'abaqus'
+        return 'D:/SIMULIA/Commands/abaqus.bat'

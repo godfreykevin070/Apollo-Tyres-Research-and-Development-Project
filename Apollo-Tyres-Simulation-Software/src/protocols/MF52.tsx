@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import api from '../services/api';
-import ProtocolInput from '../components/Protocols/ProtocolInput';
-import TestSummary from '../components/Protocols/TestSummary';
 import { ArrowLeft, Save, Upload } from 'lucide-react';
 
 interface ParameterData {
@@ -29,28 +27,29 @@ const MF52: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [meshFile, setMeshFile] = useState<File | null>(null);
+  const [protocolProjects, setProtocolProjects] = useState<any[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [parameters, setParameters] = useState<ParameterData>({
     p2: '', l1: '', l2: '', l3: '',
     vel: '', ia: '', sa: '', sr: '',
     rimWidth: '', rimDiameter: '', nominalWidth: '', outerDiameter: '',
     aspectRatio: ''
   });
+  const protocol = "MF52";
 
   useEffect(() => {
     if (projectId) {
-      loadSavedInputs();
+      loadInputs();
     }
   }, [projectId]);
 
-  const loadSavedInputs = async () => {
+  const loadInputs = async () => {
     try {
-      const response = await api.get(`/projects/${projectId}`);
-      if (response.data.project?.inputs) {
-        const inputs = response.data.project.inputs;
-        setParameters(prev => ({ ...prev, ...inputs }));
-      }
-    } catch (error) {
-      console.error('Error loading saved inputs:', error);
+      const projectsResponse = await api.get(`/projects/protocol/${protocol}`);
+      setProtocolProjects(projectsResponse.data.projects);
+
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -62,6 +61,23 @@ const MF52: React.FC = () => {
     if (e.target.files && e.target.files[0]) {
       setMeshFile(e.target.files[0]);
     }
+  };
+
+  const applySavedInputs = () => {
+    const selected = protocolProjects.find(
+        p => p.id === selectedProjectId
+    );
+
+    if (!selected) return;
+
+    let inputs = selected.inputs;
+
+    // Parse JSON if stored as string
+    if (typeof inputs === "string") {
+        inputs = JSON.parse(inputs);
+    }
+
+    setParameters(inputs);
   };
 
   const validateParameters = (): boolean => {
@@ -79,42 +95,79 @@ const MF52: React.FC = () => {
 
   const handleSubmit = async () => {
     if (!validateParameters()) return;
+
     if (!projectId) {
-      setError('Project ID is missing');
+      setError("Project ID is missing");
       return;
     }
 
     setIsSubmitting(true);
-    setError('');
+    setError("");
 
     try {
-      await api.put(`/projects/${projectId}/inputs`, { inputs: parameters });
+      // 1. Save project inputs
+      await api.put(`/projects/${projectId}/inputs`, {
+        inputs: parameters,
+      });
 
+      // 2. Generate parameter files
+      await api.post("/generate-parameters", {
+          ...parameters,
+          protocol,
+          projectId: projectId,
+      });
+
+      // 3. Upload mesh file if selected
       if (meshFile) {
         const formData = new FormData();
-        formData.append('meshFile', meshFile);
-        await api.post('/upload-mesh-file', formData);
+
+        formData.append("meshFile", meshFile);
+        formData.append("projectId", projectId!);
+
+        await api.post("/upload-mesh-file", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
       }
 
-      await api.post('/generate-parameters', {
-        ...parameters,
-        protocol: 'MF52'
+      // 4. Read MF5pt2.xlsx from protocol directory and store into mf52_data
+      const storeResponse = await api.post("/store-mf52-data");
+
+      if (!storeResponse.data.success) {
+        throw new Error("Failed to import Excel data.");
+      }
+
+      // 5. Copy scratch table -> project table
+      const matrixResponse = await api.post("/store-project-matrix", {
+        projectId: Number(projectId),
+        protocol: protocol,
       });
 
-      const response = await api.post('/process-mf52', {
-        projectId,
+      if (!matrixResponse.data.success) {
+        throw new Error("Failed to save matrix data.");
+      }
+
+      // 6. Process project
+      const processResponse = await api.post("/process-mf52", {
+        projectId: Number(projectId),
         parameters,
-        protocol: 'MF52'
       });
 
-      if (response.data.success) {
+      if (processResponse.data.success) {
         navigate(`/select?projectId=${projectId}`);
       } else {
-        setError(response.data.message || 'Failed to process MF52 data');
+        setError(processResponse.data.message || "Failed to process MF52.");
       }
     } catch (error: any) {
-      console.error('Error submitting MF52:', error);
-      setError(error.response?.data?.message || 'An error occurred while processing');
+      console.error(error);
+
+      setError(
+        error.response?.data?.detail ||
+        error.response?.data?.message ||
+        error.message ||
+        "An unexpected error occurred."
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -201,6 +254,7 @@ const MF52: React.FC = () => {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Parameters */}
           <div className="lg:col-span-2 space-y-6">
             {parameterGroups.map((group) => (
               <div key={group.title} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -243,14 +297,54 @@ const MF52: React.FC = () => {
                   <span className="text-sm text-gray-600">
                     {meshFile ? meshFile.name : 'Click to upload mesh file (.inp)'}
                   </span>
+                  <span className="text-xs text-gray-400">Drag and drop or click to browse</span>
                 </label>
               </div>
             </div>
           </div>
 
+          {/* Apply Inputs */}
           <div className="lg:col-span-1">
-            <TestSummary protocol="MF52" projectId={projectId} />
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 top-6">
+              <h2 className="text-xl font-semibold mb-6">
+                Project Details
+              </h2>
+              <div className="mt-6">
+                <label className="block text-sm font-medium mb-2">
+                    Previous MF52 Projects
+                </label>
+                <select
+                    value={selectedProjectId ?? ""}
+                    onChange={(e)=>
+                        setSelectedProjectId(Number(e.target.value))
+                    }
+                    className="w-full border rounded-lg p-2"
+                >
+                    <option value="">
+                        Select Project
+                    </option>
+                    {protocolProjects.map(project => (
+                        <option
+                            key={project.id}
+                            value={project.id}
+                        >
+                            {project.project_name}
+                        </option>
+                    ))}
+                </select>
+            </div>
+              <div className="mt-8">
+                <button
+                  onClick={applySavedInputs}
+                  disabled={!selectedProjectId}
+                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white rounded-lg py-3"
+                >
+                  Apply Saved Inputs
+                </button>
+              </div>
+            </div>
           </div>
+          
         </div>
       </main>
     </div>

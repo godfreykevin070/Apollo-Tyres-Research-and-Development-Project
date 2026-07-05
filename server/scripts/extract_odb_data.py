@@ -45,11 +45,13 @@ def extract_odb_data(odb_path, output_dir):
                 print(f"    Variable: {var_name}")
                 # Save to CSV
                 csv_path = os.path.join(output_dir, f"{var_name}.csv")
-                with open(csv_path, 'w', newline='') as f:
+                with open(csv_path, 'w') as f:
                     writer = csv.writer(f)
-                    writer.writerow(['time', 'value'])
-                    for data_point in var_data.data:
-                        writer.writerow([data_point.time, data_point.value])
+                    writer.writerow(["time", "value"])
+
+                    for point in var_data.data:
+                        if len(point) >= 2:
+                            writer.writerow(point[:2])
                 print(f"      Saved to {csv_path}")
     
     odb.close()

@@ -5,6 +5,7 @@ import signal
 import logging
 from typing import Optional, Dict, List, Any
 from pathlib import Path
+import shlex
 
 logger = logging.getLogger(__name__)
 
@@ -15,8 +16,8 @@ class AbaqusService:
     """Service for managing Abaqus simulations"""
     
     def __init__(self):
-        self.default_exe = os.getenv('ABQ_EXE', 'abaqus')
-        self.default_cpus = int(os.getenv('ABQ_CPUS', 4))
+        self.default_exe = os.getenv('ABQ_EXE', 'D:/SIMULIA/Commands/abaqus.bat')
+        self.default_cpus = int(os.getenv('ABQ_CPUS', 1))
         self.default_ask_del = os.getenv('ABQ_ASK_DEL', 'no')
     
     def _build_command(self, config: Dict[str, Any]) -> List[str]:
@@ -81,28 +82,23 @@ class AbaqusService:
     def _determine_job_type(self, row_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Determine the job type and build configuration based on row data.
-        
-        Returns:
-            Dict with keys: has_old_job, has_user_subroutine, job_name, old_job_name, user_file
         """
-        job = row_data.get('job', '').strip()
-        old_job = row_data.get('old_job', '').strip()
-        foltran = row_data.get('foltran', '').strip()
-        python_script = row_data.get('python_script', '').strip()
-        
-        # Determine if we have a user subroutine (fortran file)
-        has_user = bool(foltran and foltran != '-')
-        
-        # Determine if we have an old job dependency
-        has_old_job = bool(old_job and old_job != '-' and old_job != job)
-        
+
+        job = (row_data.get("job") or "").strip()
+        old_job = (row_data.get("old_job") or "").strip()
+        foltran = (row_data.get("foltran") or "").strip()
+        python_script = (row_data.get("python_script") or "").strip()
+
+        has_user = bool(foltran and foltran != "-")
+        has_old_job = bool(old_job and old_job != "-" and old_job != job)
+
         return {
-            'job_name': job,
-            'old_job_name': old_job if has_old_job else None,
-            'user_file': foltran if has_user else None,
-            'python_script': python_script if python_script and python_script != '-' else None,
-            'has_old_job': has_old_job,
-            'has_user_subroutine': has_user,
+            "job_name": job,
+            "old_job_name": old_job if has_old_job else None,
+            "user_file": foltran if has_user else None,
+            "python_script": python_script if python_script and python_script != "-" else None,
+            "has_old_job": has_old_job,
+            "has_user_subroutine": has_user,
         }
     
     async def run_job(self, config: Dict[str, Any]) -> Dict[str, Any]:
@@ -122,11 +118,12 @@ class AbaqusService:
         logger.info(f"Running command in {cwd}: {' '.join(cmd)}")
         
         # Create process with pipes for stdout and stderr
-        process = await asyncio.create_subprocess_exec(
-            *cmd,
+        process = subprocess.Popen(
+            cmd,
             cwd=cwd,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
         )
         
         # Store process reference for stop-all
@@ -135,45 +132,108 @@ class AbaqusService:
         try:
             # Use asyncio.wait_for with a timeout
             try:
-                stdout, stderr = await asyncio.wait_for(
-                    process.communicate(),
-                    timeout=7200  # 2 hour timeout
-                )
+                stdout, stderr = process.communicate(timeout=7200)
             except asyncio.TimeoutError:
                 logger.error(f"Job {config.get('job_name')} timed out after 2 hours")
                 process.kill()
-                await process.wait()
+                process.wait()
+
                 return {
-                    'success': False,
-                    'exit_code': -1,
-                    'error': 'Job execution timed out after 2 hours',
-                    'job_name': config.get('job_name'),
-                    'folder': folder_path,
+                    "success": False,
+                    "exit_code": -1,
+                    "error": "Job execution timed out after 2 hours",
+                    "job_name": config.get("job_name"),
+                    "folder": folder_path,
                 }
             
             exit_code = process.returncode
             
             # Log output
             if stdout:
-                logger.debug(f"STDOUT: {stdout.decode('utf-8', errors='ignore')[:500]}")
+                logger.debug(stdout[:500] if stdout else "")
             if stderr:
-                logger.debug(f"STDERR: {stderr.decode('utf-8', errors='ignore')[:500]}")
+                logger.debug(stderr[:500] if stderr else "")
             
             # Check if the job completed successfully
             if exit_code == 0:
-                # Verify that the ODB file was created
-                job_name = config.get('job_name')
+
+                job_name = config.get("job_name")
                 odb_path = os.path.join(folder_path, f"{job_name}.odb")
+
                 if os.path.exists(odb_path):
+
                     logger.info(f"ODB file created: {odb_path}")
+
+                    # ----------------------------------------------------
+                    # Execute protocol python script (if specified)
+                    # ----------------------------------------------------
+                    python_script = config.get("python_script")
+
+                    if python_script:
+
+                        project_root = os.path.dirname(folder_path)
+                        script_path = os.path.join(project_root, python_script)
+
+                        if os.path.isfile(script_path):
+
+                            speed_var = config.get("speed_var", "Vel")
+
+                            python_cmd = [
+                                config.get("abaqus_exe", self.default_exe),
+                                "python",
+                                script_path,
+                                odb_path,
+                                speed_var
+                            ]
+
+                            logger.info(
+                                f"Running post-processing: {' '.join(python_cmd)}"
+                            )
+
+                            try:
+
+                                post = subprocess.run(
+                                    python_cmd,
+                                    cwd=folder_path,
+                                    capture_output=True,
+                                    text=True,
+                                    check=True
+                                )
+
+                                logger.info(
+                                    "Post-processing completed successfully."
+                                )
+
+                                if post.stdout:
+                                    logger.info(post.stdout)
+
+                                if post.stderr:
+                                    logger.warning(post.stderr)
+
+                            except subprocess.CalledProcessError as e:
+
+                                logger.exception(
+                                    "Post-processing script failed."
+                                )
+
+                                logger.error(e.stdout)
+
+                                logger.error(e.stderr)
+
+                        else:
+
+                            logger.warning(
+                                f"Python script not found: {script_path}"
+                            )
+
                 else:
                     logger.warning(f"ODB file not found after job completion: {odb_path}")
             
             return {
                 'success': exit_code == 0,
                 'exit_code': exit_code,
-                'stdout': stdout.decode('utf-8', errors='ignore') if stdout else '',
-                'stderr': stderr.decode('utf-8', errors='ignore') if stderr else '',
+                'stdout': stdout or "",
+                'stderr': stderr or "",
                 'job_name': config.get('job_name'),
                 'folder': folder_path,
             }
@@ -181,7 +241,7 @@ class AbaqusService:
         except Exception as e:
             logger.error(f"Error running Abaqus job: {e}")
             process.kill()
-            await process.wait()
+            process.wait()
             return {
                 'success': False,
                 'exit_code': -1,
