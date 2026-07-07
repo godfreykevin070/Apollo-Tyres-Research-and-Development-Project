@@ -11,13 +11,15 @@ import sys
 import argparse
 from pathlib import Path
 
+BASE_DIR = os.path.join(Path(__file__).resolve().parent.parent,'database')
+
 def get_db_config():
     """Get database configuration from environment or prompt"""
     config = {
         'host': os.environ.get('DB_HOST', 'localhost'),
         'port': os.environ.get('DB_PORT', '5432'),
         'user': os.environ.get('DB_USER', 'postgres'),
-        'password': os.environ.get('DB_PASSWORD', 'tn22ct0524'),
+        'password': os.environ.get('DB_PASSWORD', 'postgres'),
         'database': os.environ.get('DB_NAME', 'apollo_tyres')
     }
     
@@ -87,10 +89,8 @@ def main():
     parser.add_argument('--user', default='postgres', help='Database user')
     parser.add_argument('--password', help='Database password')
     parser.add_argument('--database', default='apollo_tyres', help='Database name')
-    parser.add_argument('--schema', default='schema.sql', help='Schema file path')
-    parser.add_argument('--seed', default='seed_data.sql', help='Seed data file path')
-    parser.add_argument('--skip-seed', action='store_true', help='Skip seeding sample data')
-    
+    parser.add_argument('--schema', default=f'{BASE_DIR}/schema.sql', help='Schema file path')
+
     args = parser.parse_args()
     
     # Get config from args or environment
@@ -153,33 +153,11 @@ def main():
     if errors > 0:
         print(f"  ⚠ {errors} statements had errors (mostly skipped duplicates)")
     
-    # Execute seed data
-    if not args.skip_seed:
-        seed_file = Path(args.seed)
-        if not seed_file.exists():
-            print(f"⚠ Seed file not found: {seed_file}")
-        else:
-            print(f"\n📄 Executing seed data: {seed_file}")
-            success, errors = execute_sql_file(conn, seed_file)
-            print(f"  ✓ {success} statements executed successfully")
-            if errors > 0:
-                print(f"  ⚠ {errors} statements had errors")
-    
     conn.close()
     
     print("\n" + "=" * 60)
     print("✅ Database setup completed successfully!")
     print("=" * 60)
-    print("\nNext steps:")
-    print("1. Update config.yaml with your database credentials")
-    print("2. Run: python run_simulation.py --project-id <project_id>")
-    print("\nSample projects created:")
-    print("  - Test_Project_MF62 (ID: 1)")
-    print("  - Test_Project_MF52 (ID: 2)")
-    print("  - Test_Project_FTire (ID: 3)")
-    print("  - Test_Project_CDTire (ID: 4)")
-    print("  - Test_Project_Custom (ID: 5)")
-    print("\nTest with: python run_simulation.py --project-id 1 --list-runs")
 
 if __name__ == "__main__":
     main()

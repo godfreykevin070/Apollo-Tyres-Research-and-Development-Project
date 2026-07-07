@@ -16,8 +16,8 @@ class AbaqusService:
     """Service for managing Abaqus simulations"""
     
     def __init__(self):
-        self.default_exe = os.getenv('ABQ_EXE', 'D:/SIMULIA/Commands/abaqus.bat')
-        self.default_cpus = int(os.getenv('ABQ_CPUS', 1))
+        self.default_exe = os.getenv('ABQ_EXE', 'abaqus')
+        self.default_cpus = int(os.getenv('ABQ_CPUS', 4))
         self.default_ask_del = os.getenv('ABQ_ASK_DEL', 'no')
     
     def _build_command(self, config: Dict[str, Any]) -> List[str]:

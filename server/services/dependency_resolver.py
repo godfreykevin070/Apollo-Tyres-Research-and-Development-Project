@@ -19,11 +19,13 @@ class DependencyResolver:
     2. Has old job: Recursively resolve and execute old job first
     3. Has user subroutine: Execute with fortran file
     """
-    
     def __init__(self):
         self.abaqus = AbaqusService()
         self.file_service = FileService()
         self._visited = set()
+        self.default_exe = os.getenv('ABQ_EXE', 'abaqus')
+        self.default_cpus = int(os.getenv('ABQ_CPUS', 4))
+        self.default_ask_del = os.getenv('ABQ_ASK_DEL', 'no')
     
     def _get_table_name(self, protocol: str) -> str:
         """Get the project data table name for a protocol"""
@@ -362,4 +364,4 @@ class DependencyResolver:
         if user_subroutine or (row_data.get('foltran') and row_data['foltran'] != '-'):
             # Try to use the version that supports fortran
             return 'abq2024hf5f'
-        return 'D:/SIMULIA/Commands/abaqus.bat'
+        return self.default_exe

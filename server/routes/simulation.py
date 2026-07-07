@@ -253,15 +253,15 @@ async def generate_parameters(request: Request, user=Depends(get_current_user)):
     project_name = project["project_name"]
     protocol = data["protocol"]
 
+    file_service.update_project_files(
+        project_name,
+        protocol,
+    )
+    
     result = file_service.generate_parameters(
         data=data,
         referer=referer,
         project=project
-    )
-
-    file_service.update_project_files(
-        project_name,
-        protocol,
     )
     return result
 

@@ -16,7 +16,7 @@ DROP TABLE IF EXISTS custom_data CASCADE;
 DROP TABLE IF EXISTS ftire_data CASCADE;
 DROP TABLE IF EXISTS cdtire_data CASCADE;
 DROP TABLE IF EXISTS mf52_data CASCADE;
-DROP TABLE IF EXISTS mf_data CASCADE;
+DROP TABLE IF EXISTS mf62_data CASCADE;
 DROP TABLE IF EXISTS projects CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 
@@ -95,9 +95,9 @@ CREATE TABLE mf62_data (
     odb_path TEXT
 );
 
-CREATE INDEX idx_mf_data_runs ON mf_data(number_of_runs);
-CREATE INDEX idx_mf_data_job ON mf_data(job);
-CREATE INDEX idx_mf_data_p_l ON mf_data(p, l);
+CREATE INDEX idx_mf62_data_runs ON mf62_data(number_of_runs);
+CREATE INDEX idx_mf62_data_job ON mf62_data(job);
+CREATE INDEX idx_mf62_data_p_l ON mf62_data(p, l);
 
 -- MF5.2 Data
 CREATE TABLE mf52_data (
@@ -629,22 +629,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- ============================================================
--- 10. INITIAL DATA
--- ============================================================
-
--- Insert default users
--- Password hashes for 'Apollo@123' (engineer) and 'Manager@123' (manager)
-INSERT INTO users (id, email, password, role, name, created_at) VALUES
-('USR-ADM001', 'admin@apollotyres.com', 
- '$2b$10$XQpXQpXQpXQpXQpXQpXQpOuXQpXQpXQpXQpXQpXQpXQpXQpXQ', 
- 'engineer', 'Admin User', NOW()),
-('USR-MGR001', 'manager@apollotyres.com', 
- '$2b$10$XQpXQpXQpXQpXQpXQpXQpOuXQpXQpXQpXQpXQpXQpXQpXQpXQ', 
- 'manager', 'Manager', NOW())
-ON CONFLICT (email) DO NOTHING;
-
--- ============================================================
--- 11. GRANT PERMISSIONS
+-- 10. GRANT PERMISSIONS
 -- ============================================================
 
 -- Grant permissions to application user
@@ -652,7 +637,7 @@ GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO postgres;
 GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO postgres;
 
 -- ============================================================
--- 12. VERIFICATION QUERIES
+-- 111. VERIFICATION QUERIES
 -- ============================================================
 
 -- Check all tables created
