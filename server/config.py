@@ -15,14 +15,14 @@ class Config:
     ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv('ACCESS_TOKEN_EXPIRE_MINUTES', 60))
     
     # Abaqus
-    ABQ_EXE = os.getenv('ABQ_EXE', 'D:/SIMULIA/Commands/abaqus.bat')
-    ABQ_CPUS = int(os.getenv('ABQ_CPUS', 1))
+    ABQ_EXE = os.getenv('ABQ_EXE', 'abaqus')
+    ABQ_CPUS = int(os.getenv('ABQ_CPUS', 4))
     ABQ_ASK_DEL = os.getenv('ABQ_ASK_DEL', 'no')
     
     # Paths
     TEMPLATES_DIR = os.path.join(BASE_DIR, 'templates')
-    PROJECTS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'projects')
-    PROTOCOL_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'protocol')
+    PROJECTS_DIR = os.path.join(BASE_DIR, 'projects')
+    PROTOCOL_DIR = os.path.join(BASE_DIR, 'protocol')
     
     # Cors
     CORS_ORIGINS = os.getenv('CORS_ORIGINS', 'http://localhost:3000').split(',')

@@ -2,6 +2,9 @@ import asyncpg
 from typing import Optional
 import logging
 from config import config
+import subprocess
+import sys
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -13,6 +16,30 @@ class Database:
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
+    
+    def create_database_if_missing(self):
+        """Run setup_database.py to create the database."""
+
+        setup_script = (
+            Path(__file__).resolve()
+            .parent
+            / "database"
+            / "setup_database.py"
+        )
+
+        if not setup_script.exists():
+            raise FileNotFoundError(
+                f"setup_database.py not found at {setup_script}"
+            )
+
+        logger.info("Database does not exist. Running setup_database.py...")
+
+        subprocess.run(
+            [sys.executable, str(setup_script)],
+            check=True
+        )
+
+        logger.info("Database created successfully.")
 
     async def connect(self):
         """Create connection pool to PostgreSQL"""
@@ -24,11 +51,25 @@ class Database:
                     max_size=10,
                     command_timeout=60
                 )
-                await self.init_tables()
-                logger.info("Database connected successfully")
+
+            except asyncpg.InvalidCatalogNameError:
+
+                logger.warning("Database not found.")
+
+                self.create_database_if_missing()
+
+                self._pool = await asyncpg.create_pool(
+                    config.DATABASE_URL,
+                    min_size=1,
+                    max_size=10,
+                    command_timeout=60
+                )
+
             except Exception as e:
                 logger.error(f"Database connection failed: {e}")
                 raise
+
+            await self.init_tables()
         return self._pool
 
     async def close(self):
