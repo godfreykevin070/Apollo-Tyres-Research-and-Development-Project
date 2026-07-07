@@ -1,1 +1,0 @@
-*** Error: Abaqus Error: The following file(s) could not be located: 1_axi_p1.odb*** Error: Abaqus Error: The following file(s) could not be located: 1_axi_p1.odb
