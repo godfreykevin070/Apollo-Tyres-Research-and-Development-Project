@@ -18,28 +18,38 @@ class Database:
         return cls._instance
     
     def create_database_if_missing(self):
-        """Run setup_database.py to create the database."""
+        """Run setup_database.py and create_user.py."""
 
-        setup_script = (
-            Path(__file__).resolve()
-            .parent
-            / "database"
-            / "setup_database.py"
-        )
+        database_dir = Path(__file__).resolve().parent / "database"
+
+        setup_script = database_dir / "setup_database.py"
+        create_user_script = Path(__file__).resolve().parent / "create_user.py"
 
         if not setup_script.exists():
-            raise FileNotFoundError(
-                f"setup_database.py not found at {setup_script}"
-            )
+            raise FileNotFoundError(f"{setup_script} not found")
 
-        logger.info("Database does not exist. Running setup_database.py...")
+        if not create_user_script.exists():
+            raise FileNotFoundError(f"{create_user_script} not found")
+
+        logger.info("Database not found. Running setup_database.py...")
 
         subprocess.run(
             [sys.executable, str(setup_script)],
-            check=True
+            check=True,
+            cwd=database_dir
         )
 
         logger.info("Database created successfully.")
+
+        logger.info("Creating default user...")
+
+        subprocess.run(
+            [sys.executable, str(create_user_script)],
+            check=True,
+            cwd=database_dir
+        )
+
+        logger.info("Default user created successfully.")
 
     async def connect(self):
         """Create connection pool to PostgreSQL"""
