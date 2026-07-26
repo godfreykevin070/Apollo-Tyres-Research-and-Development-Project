@@ -382,7 +382,7 @@ async def process_mf52(
         # 6. Update project status
         await db.execute(
             "UPDATE projects SET status = $1 WHERE id = $2",
-            'processing',
+            'In Progress',
             project_id
         )
 
@@ -512,7 +512,7 @@ async def process_mf62(request: Request, user=Depends(get_current_user)):
 
         await db.execute(
             "UPDATE projects SET status = $1 WHERE id = $2",
-            'processing', project_id
+            'In Progress', project_id
         )
 
         return {
@@ -640,7 +640,7 @@ async def process_ftire(request: Request, user=Depends(get_current_user)):
 
         await db.execute(
             "UPDATE projects SET status = $1 WHERE id = $2",
-            'processing', project_id
+            'In Progress', project_id
         )
 
         return {
@@ -671,6 +671,7 @@ async def store_cdtire_data(user=Depends(get_current_user)):
     try:
         # Read Excel
         excel_data = excel_service.read_excel_data(file_path)
+        print(excel_data[0])
 
         if not excel_data:
             raise HTTPException(400, "Excel file contains no data")
@@ -692,6 +693,7 @@ async def store_cdtire_data(user=Depends(get_current_user)):
                     slip_angle,
                     slip_range,
                     cleat,
+                    cpus,
                     road_surface,
                     job,
                     old_job,
@@ -702,7 +704,7 @@ async def store_cdtire_data(user=Depends(get_current_user)):
                     foltran,
                     python_script
                 )
-                VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+                VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
                 """,
                 int(row.get("no_of_tests", 0)),
                 str(row.get("test_name", "")),
@@ -713,6 +715,7 @@ async def store_cdtire_data(user=Depends(get_current_user)):
                 str(row.get("slip_angle_deg", "")),
                 str(row.get("slip_range_", "")),
                 str(row.get("cleat", "")),
+                int(row.get("cpus", "")),
                 str(row.get("road_surface", "")),
                 str(row.get("job", "")),
                 str(row.get("old_job", "")),
@@ -786,7 +789,7 @@ async def process_cdtire(request: Request, user=Depends(get_current_user)):
 
         await db.execute(
             "UPDATE projects SET status = $1 WHERE id = $2",
-            'processing', project_id
+            'In Progress', project_id
         )
 
         return {
@@ -807,68 +810,68 @@ async def process_cdtire(request: Request, user=Depends(get_current_user)):
 
 @router.post("/store-custom-data")
 async def store_custom_data(user=Depends(get_current_user)):
-    """Read Custom Excel file and store into custom_data (upsert on conflict)"""
+    """Read Custom Excel file and store into Custom_data (upsert on conflict)"""
     file_path = os.path.join(file_service.protocol_dir, "Custom.xlsx")
+    print(file_path)
+
     if not os.path.exists(file_path):
         raise HTTPException(404, f"File not found: {file_path}")
 
     try:
+        # Read Excel
         excel_data = excel_service.read_excel_data(file_path)
+        print(excel_data[0])
+
         if not excel_data:
             raise HTTPException(400, "Excel file contains no data")
 
+        # Clear scratch table
         await db.execute("TRUNCATE TABLE custom_data")
 
+        # Insert every row
         for row in excel_data:
-            run_num = row.get("number_of_runs")
-            if run_num is None or str(run_num).strip() == "":
-                run_num = 0
-            else:
-                run_num = int(run_num)
-
             await db.execute(
                 """
-                INSERT INTO custom_data
-                (
-                    number_of_runs, tests, inflation_pressure, loads,
-                    inclination_angle, slip_angle, slip_ratio, test_velocity,
-                    cleat_orientation, displacement, job, old_job,
-                    template_tydex, tydex_name, p, l
+                INSERT INTO custom_data(
+                    number_of_runs,
+                    tests,
+                    inflation_pressure,
+                    loads,
+                    inclination_angle,
+                    slip_angle,
+                    slip_ratio,
+                    test_velocity,
+                    cleat_orientation,
+                    displacement,
+                    job,
+                    old_job,
+                    template_tydex,
+                    tydex_name,
+                    p,
+                    l,
+                    foltran,
+                    python_script
                 )
-                VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
-                ON CONFLICT (number_of_runs) DO UPDATE SET
-                    tests = EXCLUDED.tests,
-                    inflation_pressure = EXCLUDED.inflation_pressure,
-                    loads = EXCLUDED.loads,
-                    inclination_angle = EXCLUDED.inclination_angle,
-                    slip_angle = EXCLUDED.slip_angle,
-                    slip_ratio = EXCLUDED.slip_ratio,
-                    test_velocity = EXCLUDED.test_velocity,
-                    cleat_orientation = EXCLUDED.cleat_orientation,
-                    displacement = EXCLUDED.displacement,
-                    job = EXCLUDED.job,
-                    old_job = EXCLUDED.old_job,
-                    template_tydex = EXCLUDED.template_tydex,
-                    tydex_name = EXCLUDED.tydex_name,
-                    p = EXCLUDED.p,
-                    l = EXCLUDED.l
+                VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
                 """,
-                run_num,
+                int(row.get("number_of_tests", 0)),
                 str(row.get("tests", "")),
-                str(row.get("inflation_pressure", "")),
-                str(row.get("loads", "")),
-                str(row.get("inclination_angle", "")),
-                str(row.get("slip_angle", "")),
-                str(row.get("slip_ratio", "")),
-                str(row.get("test_velocity", "")),
-                str(row.get("cleat_orientation", "")),
-                str(row.get("displacement", "")),
+                str(row.get("inflation_pressure_psi", "")),
+                str(row.get("loads_kg", "")),
+                str(row.get("inclination_angle_", "")),
+                str(row.get("slip_angle_", "")),
+                str(row.get("slip_ratio_", "")),
+                str(row.get("test_velocity_kmph", "")),
+                str(row.get("cleat_orientation_w.r.t_axial_direction_", "")),
+                str(row.get("displacement_mm", "")),
                 str(row.get("job", "")),
                 str(row.get("old_job", "")),
                 str(row.get("template_tydex", "")),
                 str(row.get("tydex_name", "")),
-                str(row.get("p", "")),
-                str(row.get("l", ""))
+                str(row.get("inflation_pressure_psi", "")),
+                str(row.get("loads_kg", "")),
+                str(row.get("folrtran", "")),
+                str(row.get("python_script", ""))                  
             )
 
         return {
@@ -877,9 +880,9 @@ async def store_custom_data(user=Depends(get_current_user)):
             "message": f"Imported {len(excel_data)} rows."
         }
     except Exception as e:
-        logger.exception("Failed to import Custom Excel")
+        logger.exception("Failed to import CDTire Excel")
         raise HTTPException(500, str(e))
-
+    
 
 @router.post("/process-custom")
 async def process_custom(request: Request, user=Depends(get_current_user)):
@@ -933,7 +936,7 @@ async def process_custom(request: Request, user=Depends(get_current_user)):
 
         await db.execute(
             "UPDATE projects SET status = $1 WHERE id = $2",
-            'processing', project_id
+            'In Progress', project_id
         )
 
         return {

@@ -31,6 +31,8 @@ const Custom: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [meshFile, setMeshFile] = useState<File | null>(null);
+  const [protocolProjects, setProtocolProjects] = useState<any[]>([]);
+    const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [parameters, setParameters] = useState<ParameterData>({
     p1: '', p2: '', p3: '',
     l1: '', l2: '', l3: '', l4: '', l5: '',
@@ -38,22 +40,21 @@ const Custom: React.FC = () => {
     rimWidth: '', rimDiameter: '', nominalWidth: '', outerDiameter: '',
     aspectRatio: ''
   });
+  const protocol = "Custom";
+
 
   useEffect(() => {
     if (projectId) {
-      loadSavedInputs();
+      loadInputs();
     }
   }, [projectId]);
 
-  const loadSavedInputs = async () => {
+  const loadInputs = async () => {
     try {
-      const response = await api.get(`/projects/${projectId}`);
-      if (response.data.project?.inputs) {
-        const inputs = response.data.project.inputs;
-        setParameters(prev => ({ ...prev, ...inputs }));
-      }
-    } catch (error) {
-      console.error('Error loading saved inputs:', error);
+      const projectsResponse = await api.get(`/projects/protocol/${protocol}`);
+      setProtocolProjects(projectsResponse.data.projects);
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -65,6 +66,16 @@ const Custom: React.FC = () => {
     if (e.target.files && e.target.files[0]) {
       setMeshFile(e.target.files[0]);
     }
+  };
+
+  const applySavedInputs = () => {
+    const selected = protocolProjects.find(p => p.id === selectedProjectId);
+    if (!selected) return;
+    let inputs = selected.inputs;
+    if (typeof inputs === "string") {
+      inputs = JSON.parse(inputs);
+    }
+    setParameters(inputs);
   };
 
   const validateParameters = (): boolean => {
@@ -92,31 +103,51 @@ const Custom: React.FC = () => {
     try {
       await api.put(`/projects/${projectId}/inputs`, { inputs: parameters });
 
+      await api.post("/generate-parameters", {
+        ...parameters,
+        protocol,
+        projectId: projectId,
+      });
+
       if (meshFile) {
         const formData = new FormData();
-        formData.append('meshFile', meshFile);
-        await api.post('/upload-mesh-file', formData);
+        formData.append("meshFile", meshFile);
+        formData.append("projectId", projectId!);
+        await api.post("/upload-mesh-file", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
       }
 
-      await api.post('/generate-parameters', {
-        ...parameters,
-        protocol: 'Custom'
-      });
+      const storeResponse = await api.post("/store-custom-data");
+      if (!storeResponse.data.success) {
+        throw new Error("Failed to import Excel data.");
+      }
 
-      const response = await api.post('/process-custom', {
-        projectId,
+      const matrixResponse = await api.post("/store-project-matrix", {
+        projectId: Number(projectId),
+        protocol: protocol,
+      });
+      if (!matrixResponse.data.success) {
+        throw new Error("Failed to save matrix data.");
+      }
+
+      const processResponse = await api.post("/process-custom", {
+        projectId: Number(projectId),
         parameters,
-        protocol: 'Custom'
       });
-
-      if (response.data.success) {
+      if (processResponse.data.success) {
         navigate(`/select?projectId=${projectId}`);
       } else {
-        setError(response.data.message || 'Failed to process Custom data');
+        setError(processResponse.data.message || "Failed to process Custom.");
       }
     } catch (error: any) {
-      console.error('Error submitting Custom:', error);
-      setError(error.response?.data?.message || 'An error occurred while processing');
+      console.error(error);
+      setError(
+        error.response?.data?.detail ||
+        error.response?.data?.message ||
+        error.message ||
+        "An unexpected error occurred."
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -247,6 +278,38 @@ const Custom: React.FC = () => {
                     {meshFile ? meshFile.name : 'Click to upload mesh file (.inp)'}
                   </span>
                 </label>
+              </div>
+            </div>
+          </div>
+
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 top-6">
+              <h2 className="text-xl font-semibold mb-6">Project Details</h2>
+              <div className="mt-6">
+                <label className="block text-sm font-medium mb-2">
+                  Previous Custom Projects
+                </label>
+                <select
+                  value={selectedProjectId ?? ""}
+                  onChange={(e) => setSelectedProjectId(Number(e.target.value))}
+                  className="w-full border rounded-lg p-2"
+                >
+                  <option value="">Select Project</option>
+                  {protocolProjects.map(project => (
+                    <option key={project.id} value={project.id}>
+                      {project.project_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="mt-8">
+                <button
+                  onClick={applySavedInputs}
+                  disabled={!selectedProjectId}
+                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white rounded-lg py-3"
+                >
+                  Apply Saved Inputs
+                </button>
               </div>
             </div>
           </div>

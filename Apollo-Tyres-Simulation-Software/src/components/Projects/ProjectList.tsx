@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import type { Project } from '../../types';
 import { 
@@ -9,14 +8,12 @@ import {
   Search, 
   ChevronLeft, 
   ChevronRight,
-  Eye,
   Edit,
   Trash2,
   CheckCircle,
   Clock,
   AlertCircle,
   Archive,
-  Filter,
   Grid,
   List,
   RefreshCw
@@ -24,7 +21,6 @@ import {
 import { formatDistanceToNow, format } from 'date-fns';
 
 const ProjectList: React.FC = () => {
-  const { user } = useAuth();
   const navigate = useNavigate();
   const [projects, setProjects] = useState<Project[]>([]);
   const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);

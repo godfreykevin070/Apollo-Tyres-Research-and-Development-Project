@@ -278,7 +278,7 @@ class ExcelService:
             elif protocol == 'CDTire':
                 headers = ['No of Tests', 'Test Name', 'Inflation Pressure [bar]', 'Velocity [km/h]',
                           'Preload [N]', 'Camber [Deg]', 'Slip Angle [deg]', 'Displacement [mm]',
-                          'Slip range [%]', 'Cleat', 'Road Surface', 'Job', 'Old Job', 
+                          'Slip range [%]', 'Cleat', 'Cpus', 'Road Surface', 'Job', 'Old Job', 
                           'Template Tydex', 'Tydex name', 'P', 'L']
             else:  # Custom
                 headers = ['No of Tests', 'Tests', 'Inflation Pressure [PSI]', 'Loads [Kg]',

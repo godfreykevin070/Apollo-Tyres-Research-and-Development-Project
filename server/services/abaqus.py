@@ -17,7 +17,8 @@ class AbaqusService:
     
     def __init__(self):
         self.default_exe = os.getenv('ABQ_EXE', 'abaqus')
-        self.default_cpus = int(os.getenv('ABQ_CPUS', 4))
+        self.default_cpus = int(os.getenv('ABQ_CPUS', 1))
+        print("\n", self.default_cpus, "\n")
         self.default_ask_del = os.getenv('ABQ_ASK_DEL', 'no')
     
     def _build_command(self, config: Dict[str, Any]) -> List[str]:
@@ -29,6 +30,7 @@ class AbaqusService:
         2. Has old job: abaqus job=JOB_NAME oldjob=OLD_JOB cpus=N ask_del=no int
         3. Has user subroutine: abq2024hf5f job=JOB_NAME oldjob=OLD_JOB user=USER_FILE.f cpus=N int
         """
+        print("\n", config, "\n")
         exe = config.get('abaqus_exe', self.default_exe)
         job_name = config.get('job_name', '')
         input_file = config.get('input_file', f"{job_name}.inp")
@@ -77,6 +79,7 @@ class AbaqusService:
             cmd.append("int")
         
         logger.info(f"Built command: {' '.join(cmd)}")
+        print("\n", cmd, "\n")
         return cmd
     
     def _determine_job_type(self, row_data: Dict[str, Any]) -> Dict[str, Any]:

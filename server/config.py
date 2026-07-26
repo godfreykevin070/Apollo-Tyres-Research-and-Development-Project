@@ -16,7 +16,7 @@ class Config:
     
     # Abaqus
     ABQ_EXE = os.getenv('ABQ_EXE', 'abaqus')
-    ABQ_CPUS = int(os.getenv('ABQ_CPUS', 4))
+    ABQ_CPUS = int(os.getenv('ABQ_CPUS', 1))
     ABQ_ASK_DEL = os.getenv('ABQ_ASK_DEL', 'no')
     
     # Paths

@@ -24,7 +24,7 @@ class DependencyResolver:
         self.file_service = FileService()
         self._visited = set()
         self.default_exe = os.getenv('ABQ_EXE', 'abaqus')
-        self.default_cpus = int(os.getenv('ABQ_CPUS', 4))
+        self.default_cpus = int(os.getenv('ABQ_CPUS', 1))
         self.default_ask_del = os.getenv('ABQ_ASK_DEL', 'no')
     
     def _get_table_name(self, protocol: str) -> str:
@@ -68,11 +68,18 @@ class DependencyResolver:
         elif table_name == "cdtire_project_data":
             query = f"""
                 SELECT number_of_runs, p, l, job, old_job, template_tydex, tydex_name, velocity,
-                    slip_angle, slip_range, cleat, foltran, python_script
+                    slip_angle, slip_range, cleat, cpus, foltran, python_script
                 FROM {table_name}
                 WHERE number_of_runs = $1
             """
-        
+        else:
+            query = f"""
+                SELECT number_of_runs, tests, loads, inflation_pressure, test_velocity, 
+                slip_angle, slip_ratio, inclination_angle, cleat_orientation, job, old_job, template_tydex, 
+                tydex_name, p, l
+                FROM {table_name}
+                WHERE number_of_runs = $1
+            """
         row = await db.execute_one(query, run_number)
         return dict(row) if row else None
     
@@ -350,13 +357,30 @@ class DependencyResolver:
         return result[0] if result else None
     
     def _determine_cpus(self, row_data: Dict[str, Any]) -> int:
-        """Determine CPU count for the job. Max 4 for student version."""
-        # Student version is limited to 4 CPUs
-        base_cpus = 1
+        """
+        Determine the CPU count for the Abaqus job.
+
+        Priority:
+        1. Use the CPU count specified in the database row (if present).
+        2. Otherwise use the value from ABQ_CPUS in the .env file.
+        """
+
+        cpus = row_data.get("cpus")
+        print("\n", cpus, "\n")
+
+        # Use .env default if database doesn't specify CPUs
+        if cpus in (None, "", "-"):
+            cpus = self.default_cpus
+
+        try:
+            cpus = int(cpus)
+        except (TypeError, ValueError):
+            cpus = self.default_cpus
+
+        logger.info(f"Using {cpus} CPU(s) for Abaqus job")
+
+        return cpus
         
-        # Could add logic to increase if needed, but student version caps at 4
-        return base_cpus
-    
     def _determine_abaqus_exe(self, row_data: Dict[str, Any], user_subroutine: Optional[str] = None) -> str:
         """Determine which Abaqus executable to use."""
         # For student version, use 'abaqus' as the executable
@@ -365,3 +389,5 @@ class DependencyResolver:
             # Try to use the version that supports fortran
             return 'abq2024hf5f'
         return self.default_exe
+    
+    

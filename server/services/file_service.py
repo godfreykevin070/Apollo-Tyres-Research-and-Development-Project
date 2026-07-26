@@ -38,6 +38,7 @@ class FileService:
         """Check if ODB file exists"""
         odb_path = self.get_odb_path(project_name, protocol, folder_name, job_name)
         exists = os.path.exists(odb_path)
+        print(odb_path)
         return exists, odb_path
     
     def check_tydex_file(self, project_name: str, protocol: str, folder_name: str, tydex_name: str) -> Tuple[bool, str]:

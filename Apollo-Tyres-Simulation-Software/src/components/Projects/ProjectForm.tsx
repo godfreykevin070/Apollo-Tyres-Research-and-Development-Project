@@ -1,12 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import { 
   ArrowLeft,
   Save,
-  X,
-  Check,
   AlertCircle
 } from 'lucide-react';
 
@@ -19,7 +16,6 @@ interface FormData {
 }
 
 const ProjectForm: React.FC = () => {
-  const { user } = useAuth();
   const navigate = useNavigate();
   const [formData, setFormData] = useState<FormData>({
     project_name: '',
@@ -86,7 +82,7 @@ const ProjectForm: React.FC = () => {
           'Custom': '/custom',
         };
 
-        const protocolPath = protocolMap[formData.protocol] || '/select';
+        const protocolPath = protocolMap[formData.protocol];
         navigate(`${protocolPath}?projectId=${response.data.id}`);
       } else {
         setSubmitError(response.data.message || 'Failed to create project');
