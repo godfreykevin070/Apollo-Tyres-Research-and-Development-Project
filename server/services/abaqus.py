@@ -103,159 +103,63 @@ class AbaqusService:
             "has_old_job": has_old_job,
             "has_user_subroutine": has_user,
         }
-    
-    async def run_job(self, config: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Run an Abaqus job asynchronously with real-time output capture.
-        """
-        folder_path = config.get('folder_path')
-        if not folder_path or not os.path.exists(folder_path):
-            raise ValueError(f"Folder path does not exist: {folder_path}")
-        
-        # Build command
-        cmd = self._build_command(config)
-        
-        # Set working directory
-        cwd = folder_path
-        
-        logger.info(f"Running command in {cwd}: {' '.join(cmd)}")
-        
-        # Create process with pipes for stdout and stderr
-        process = subprocess.Popen(
-            cmd,
-            cwd=cwd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-        )
-        
-        # Store process reference for stop-all
-        _running_processes[process.pid] = process
-        
-        try:
-            # Use asyncio.wait_for with a timeout
-            try:
-                stdout, stderr = process.communicate(timeout=7200)
-            except asyncio.TimeoutError:
-                logger.error(f"Job {config.get('job_name')} timed out after 2 hours")
-                process.kill()
-                process.wait()
 
+    async def run_job(self, config: Dict[str, Any]) -> Dict[str, Any]:
+        folder_path = config.get("folder_path")
+
+        if not folder_path:
+            raise ValueError("Folder path missing")
+
+        cmd = self._build_command(config)
+
+        logger.info(
+            f"Running command in {folder_path}: {' '.join(cmd)}"
+        )
+
+        try:
+
+            process = subprocess.Popen(
+                cmd,
+                cwd=folder_path,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                creationflags=subprocess.CREATE_NEW_PROCESS_GROUP
+            )
+
+            logger.info(
+                f"Abaqus started successfully PID={process.pid}"
+            )
+
+            return_code = await asyncio.to_thread(process.wait)
+
+            logger.info(
+                f"Abaqus finished PID={process.pid} ExitCode={return_code}"
+            )
+
+            if return_code != 0:
                 return {
                     "success": False,
-                    "exit_code": -1,
-                    "error": "Job execution timed out after 2 hours",
-                    "job_name": config.get("job_name"),
-                    "folder": folder_path,
+                    "error": f"Abaqus exited with code {return_code}",
+                    "job_name": config.get("job_name")
                 }
-            
-            exit_code = process.returncode
-            
-            # Log output
-            if stdout:
-                logger.debug(stdout[:500] if stdout else "")
-            if stderr:
-                logger.debug(stderr[:500] if stderr else "")
-            
-            # Check if the job completed successfully
-            if exit_code == 0:
 
-                job_name = config.get("job_name")
-                odb_path = os.path.join(folder_path, f"{job_name}.odb")
-
-                if os.path.exists(odb_path):
-
-                    logger.info(f"ODB file created: {odb_path}")
-
-                    # ----------------------------------------------------
-                    # Execute protocol python script (if specified)
-                    # ----------------------------------------------------
-                    python_script = config.get("python_script")
-
-                    if python_script:
-
-                        project_root = os.path.dirname(folder_path)
-                        script_path = os.path.join(project_root, python_script)
-
-                        if os.path.isfile(script_path):
-
-                            speed_var = config.get("speed_var", "Vel")
-
-                            python_cmd = [
-                                config.get("abaqus_exe", self.default_exe),
-                                "python",
-                                script_path,
-                                odb_path,
-                                speed_var
-                            ]
-
-                            logger.info(
-                                f"Running post-processing: {' '.join(python_cmd)}"
-                            )
-
-                            try:
-
-                                post = subprocess.run(
-                                    python_cmd,
-                                    cwd=folder_path,
-                                    capture_output=True,
-                                    text=True,
-                                    check=True
-                                )
-
-                                logger.info(
-                                    "Post-processing completed successfully."
-                                )
-
-                                if post.stdout:
-                                    logger.info(post.stdout)
-
-                                if post.stderr:
-                                    logger.warning(post.stderr)
-
-                            except subprocess.CalledProcessError as e:
-
-                                logger.exception(
-                                    "Post-processing script failed."
-                                )
-
-                                logger.error(e.stdout)
-
-                                logger.error(e.stderr)
-
-                        else:
-
-                            logger.warning(
-                                f"Python script not found: {script_path}"
-                            )
-
-                else:
-                    logger.warning(f"ODB file not found after job completion: {odb_path}")
-            
             return {
-                'success': exit_code == 0,
-                'exit_code': exit_code,
-                'stdout': stdout or "",
-                'stderr': stderr or "",
-                'job_name': config.get('job_name'),
-                'folder': folder_path,
+                "success": True,
+                "status": "completed",
+                "job_name": config.get("job_name")
             }
-            
+
         except Exception as e:
-            logger.error(f"Error running Abaqus job: {e}")
-            process.kill()
-            process.wait()
+
+            logger.exception(
+                "Failed to start Abaqus"
+            )
+
             return {
-                'success': False,
-                'exit_code': -1,
-                'error': str(e),
-                'job_name': config.get('job_name'),
-                'folder': folder_path,
+                "success": False,
+                "error": str(e),
+                "job_name": config.get("job_name")
             }
-        finally:
-            # Remove process from tracking
-            if process.pid in _running_processes:
-                del _running_processes[process.pid]
     
     def stop_all(self) -> Dict[str, Any]:
         """Stop all running Abaqus processes"""

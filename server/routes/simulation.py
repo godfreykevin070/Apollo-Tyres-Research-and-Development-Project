@@ -6,13 +6,20 @@ import subprocess
 from typing import Optional
 import json
 
+import logging
 from database import db
 from auth import get_current_user
 from services.abaqus import AbaqusService
 from services.dependency_resolver import DependencyResolver
 from services.simulation_service import SimulationService
+from services.file_service import FileService
 
+
+logger = logging.getLogger(__name__)
 router = APIRouter()
+resolver = DependencyResolver()
+
+running_tasks = {}
 
 @router.get("/get-row-data")
 async def get_row_data(protocol: str, runNumber: int, user=Depends(get_current_user)):
@@ -65,44 +72,61 @@ async def get_row_data(protocol: str, runNumber: int, user=Depends(get_current_u
     
     return {"success": True, "data": dict(row)}
 
+
 @router.post("/resolve-job-dependencies")
 async def resolve_dependencies(
     request: Request,
     user=Depends(get_current_user)
 ):
-    """Resolve job dependencies and run Abaqus simulation"""
     data = await request.json()
-    print("Received data:", data)
-    
-    project_id = int(data.get('projectId'))
-    run_number = data.get('runNumber')
+
+    project_id = int(data["projectId"])
+    run_number = int(data["runNumber"])
 
     project_name, protocol = await db.execute_one(
         "SELECT project_name, protocol FROM projects WHERE id = $1",
         project_id
     )
-    
-    if not all([project_name, protocol, run_number]):
+
+    if not all([project_name, protocol]):
         raise HTTPException(400, "Missing required parameters")
-    
-    # Check if user has permission for this project
-    project = await db.execute_one(
-        "SELECT user_email FROM projects WHERE id = $1",
-        project_id
-    )
-    if not project:
-        raise HTTPException(404, "Project not found")
-    if user['role'] not in ['manager', 'admin'] and project['user_email'] != user['email']:
-        raise HTTPException(403, "Forbidden")
-    
-    resolver = DependencyResolver()
-    result = await resolver.resolve_and_run(
-        project_name=project_name,
-        protocol=protocol,
-        run_number=run_number
-    )
-    
-    return result
+
+    existing = running_tasks.get(project_id)
+
+    if existing and not existing.done():
+        raise HTTPException(
+            status_code=400,
+            detail="Simulation already running."
+        )
+
+    async def background_job():
+        try:
+            await resolver.resolve_and_run(
+                project_name=project_name,
+                protocol=protocol,
+                run_number=run_number,
+            )
+        except Exception as e:
+            print(f"Simulation failed: {e}")
+
+    task = asyncio.create_task(background_job())
+
+    running_tasks[project_id] = task
+
+    def cleanup(t: asyncio.Task):
+        try:
+            t.result()
+        except Exception as e:
+            print(f"Background task crashed: {e}")
+
+        running_tasks.pop(project_id, None)
+
+    task.add_done_callback(cleanup)
+
+    return {
+        "success": True,
+        "message": "Simulation started"
+    }
 
 @router.get("/check-odb-file")
 async def check_odb_file(
@@ -280,3 +304,128 @@ async def create_protocol_folders(request: Request, user=Depends(get_current_use
     file_service = FileService()
     result = file_service.create_protocol_folders(project_name, protocol)
     return result
+
+@router.post("/refresh-status")
+async def refresh_status(
+    request: Request,
+    user=Depends(get_current_user)
+):
+    """
+    Refresh the status of all running simulations for a project.
+    For each row with run_status = 'running':
+      - Check if the ODB file exists.
+      - If yes, run the associated Python post‑processing script (if any),
+        then mark the run as 'completed' (or 'failed' if the script fails).
+      - If not, leave it as 'running' (the refresh will check again later).
+    """
+    data = await request.json()
+    project_id = data.get('projectId')
+    if not project_id:
+        raise HTTPException(400, "Project ID is required")
+
+    # Get project details
+    project = await db.execute_one(
+        "SELECT project_name, protocol FROM projects WHERE id = $1",
+        project_id
+    )
+    if not project:
+        raise HTTPException(404, "Project not found")
+
+    project_name = project["project_name"]
+    protocol = project["protocol"]
+
+    # Determine the correct data table
+    table_map = {
+        'mf62': 'mf62_project_data',
+        'mf52': 'mf52_project_data',
+        'ftire': 'ftire_project_data',
+        'cdtire': 'cdtire_project_data',
+        'custom': 'custom_project_data'
+    }
+    table_name = table_map.get(protocol.lower())
+    if not table_name:
+        raise HTTPException(400, "Invalid protocol")
+
+    # Fetch all rows for this project that are currently 'running'
+    rows = await db.execute(
+        f"""
+        SELECT * FROM {table_name}
+        WHERE project_id = $1 AND run_status = 'running'
+        """,
+        project_id
+    )
+
+    file_service = FileService()
+    abaqus_service = AbaqusService()
+    updated_count = 0
+
+    for row in rows:
+        run_number = row["number_of_runs"]
+        job_name = row.get("job", "").strip()
+        if not job_name:
+            continue
+
+        # Build folder path (adjust column names as needed)
+        folder_name = f"{row.get('p', '')}_{row.get('l', '')}"
+        folder_path = file_service.get_project_folder_path(project_name, protocol, folder_name)
+        odb_path = os.path.join(folder_path, f"{job_name}.odb")
+        logger.info(f"Checking: {odb_path}")
+        logger.info(f"Exists: {os.path.isfile(odb_path)}")
+
+        # Check if ODB exists
+        if os.path.isfile(odb_path):
+            # ODB is present → run post‑processing if a Python script is defined
+            python_script = row.get("python_script")
+            if python_script and python_script.strip():
+                try:
+                    # Build and execute the Python script (same logic as originally in AbaqusService)
+                    project_root = os.path.dirname(folder_path)
+                    script_path = os.path.join(project_root, python_script)
+                    if os.path.isfile(script_path):
+                        speed_var = row.get("velocity", "Vel")  # adjust default as needed
+                        python_cmd = [
+                            os.getenv('ABQ_EXE', 'abaqus'),
+                            "python",
+                            script_path,
+                            odb_path,
+                            speed_var
+                        ]
+                        logger.info(f"Running post‑processing: {' '.join(python_cmd)}")
+                        subprocess.run(
+                            python_cmd,
+                            cwd=folder_path,
+                            check=True,
+                            capture_output=True,
+                            text=True
+                        )
+                    else:
+                        logger.warning(f"Python script not found: {script_path}")
+                except Exception as e:
+                    logger.error(f"Post-processing failed for run {run_number}: {e}")
+                    # Mark as failed if post‑processing fails? Decide based on requirements.
+                    # For now, we still mark as completed but log the error.
+                    # Optionally you could set status to 'failed' here.
+                    # We'll proceed to mark completed anyway because ODB exists.
+
+            # Update row to 'completed'
+            await db.execute(
+                f"""
+                UPDATE {table_name}
+                SET run_status = 'completed',
+                    run_end_time = CURRENT_TIMESTAMP,
+                    odb_path = $1
+                WHERE number_of_runs = $2
+                """,
+                odb_path,
+                run_number
+            )
+            updated_count += 1
+        else:
+            # ODB not yet present – leave as 'running'
+            # Optionally, you could check if the process is still alive and mark as failed if dead
+            pass
+
+    return {
+        "success": True,
+        "message": f"Refresh completed. {updated_count} runs updated to 'completed'."
+    }

@@ -18,11 +18,13 @@ class FileService:
         self.projects_dir = config.PROJECTS_DIR
         self.templates_dir = config.TEMPLATES_DIR
         self.protocol_dir = config.PROTOCOL_DIR
+        self.saved_projects_dir = config.SAVED_PROJECTS_DIR
         
         # Ensure directories exist
         os.makedirs(self.projects_dir, exist_ok=True)
         os.makedirs(self.templates_dir, exist_ok=True)
         os.makedirs(self.protocol_dir, exist_ok=True)
+        os.makedirs(self.saved_projects_dir, exist_ok=True)
     
     def get_project_folder_path(self, project_name: str, protocol: str, folder_name: str) -> str:
         """Get the full path to a project folder"""
@@ -263,4 +265,38 @@ class FileService:
             "success": True,
             "message": "Project files updated successfully."
         }
-    
+
+    def save_project(
+        self,
+        project_name: str,
+        protocol: str
+    ):
+        """
+        Copy the entire project folder into Saved_Projects.
+        """
+
+        source = os.path.join(
+            self.projects_dir,
+            f"{project_name}_{protocol}"
+        )
+
+        if not os.path.exists(source):
+            raise FileNotFoundError(
+                f"Project folder not found: {source}"
+            )
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+        destination = os.path.join(
+            config.SAVED_PROJECTS_DIR,
+            f"{project_name}_{protocol}_{timestamp}"
+        )
+
+        shutil.copytree(source, destination)
+
+        logger.info(f"Saved project to {destination}")
+
+        return {
+            "success": True,
+            "saved_path": destination
+        }

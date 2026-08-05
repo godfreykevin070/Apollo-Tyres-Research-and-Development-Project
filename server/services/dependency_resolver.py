@@ -123,14 +123,6 @@ class DependencyResolver:
             run_number,
         )
     
-    async def _check_odb_exists(self, project_name: str, protocol: str, 
-                                 folder_name: str, job_name: str) -> bool:
-        """Check if ODB file already exists"""
-        exists, _ = self.file_service.check_odb_file(
-            project_name, protocol, folder_name, job_name
-        )
-        return exists
-    
     async def _run_job(self, config: Dict[str, Any], 
                        progress_callback: Optional[callable] = None) -> Dict[str, Any]:
         """
@@ -183,11 +175,18 @@ class DependencyResolver:
             project_name, protocol, run_number, progress_callback
         )
     
-    async def _resolve_and_run_recursive(self, project_name: str, protocol: str, 
-                                         run_number: int,
-                                         progress_callback: Optional[callable] = None) -> Dict[str, Any]:
+    async def _resolve_and_run_recursive(
+        self,
+        project_name: str,
+        protocol: str,
+        run_number: int,
+        progress_callback: Optional[callable] = None
+    ) -> Dict[str, Any]:
         """
         Recursive dependency resolution.
+        Now only sets status to 'running', starts the Abaqus job,
+        and returns immediately.  Status completion/failure is handled
+        by the refresh endpoint.
         """
         # Get row data
         row_data = await self._get_row_data(protocol, run_number)
@@ -196,21 +195,21 @@ class DependencyResolver:
                 protocol,
                 run_number,
                 "failed",
-                "Row data not found"
+                error_message="Row data not found"
             )
             return {
                 'success': False,
                 'message': f'Row data not found for run {run_number}'
             }
-        
+
         job_name = row_data.get('job', '').strip()
         if not job_name:
             return {
                 'success': False,
                 'message': f'No job specified for run {run_number}'
             }
-        
-        # Check if already visited (circular dependency)
+
+        # Check for circular dependencies
         job_key = f"{job_name}_{run_number}"
         if job_key in self._visited:
             logger.warning(f"Circular dependency detected for {job_key}, skipping")
@@ -220,58 +219,64 @@ class DependencyResolver:
                 'skipped': True
             }
         self._visited.add(job_key)
-        
-        # Check if ODB already exists
-        folder_name = f"{row_data.get('p', '')}_{row_data.get('l', '')}"
-        if await self._check_odb_exists(project_name, protocol, folder_name, job_name):
-            logger.info(f"ODB already exists for {job_name}, skipping")
-            if progress_callback:
-                await progress_callback(run_number, 'done', 100, f"Job {job_name} already completed")
-            
-            await self._update_run_status(
-                protocol,
-                run_number,
-                "completed"
-            )
 
-            return {
-                "success": True,
-                "message": f"ODB already exists for {job_name}",
-                "skipped": True
-            }
-        
-        # Determine job type
+        # Determine job type (old job, user subroutine)
         job_config = self.abaqus._determine_job_type(row_data)
         old_job = job_config.get('old_job_name')
         user_subroutine = job_config.get('user_file')
-        
-        # Resolve old job dependency if exists
+
+        # Resolve dependency (only run if dependency is NOT already completed)
         if old_job:
             logger.info(f"Resolving dependency: {old_job} for {job_name}")
-            # Find the run number for the old job
+
             old_run_number = await self._find_run_number_by_job(protocol, old_job)
-            if old_run_number:
-                result = await self._resolve_and_run_recursive(
-                    project_name, protocol, old_run_number, progress_callback
+
+            if old_run_number is None:
+                logger.warning(
+                    f"Old job '{old_job}' not found in database. Continuing..."
                 )
-                if not result.get('success'):
-                    return {
-                        'success': False,
-                        'message': f"Failed to resolve dependency {old_job}: {result.get('message', 'Unknown error')}"
-                    }
             else:
-                logger.warning(f"Old job {old_job} not found in database, attempting to run anyway")
-        
-        # Build Abaqus config
+
+                dependency_completed = await self._is_completed(
+                    protocol,
+                    old_run_number
+                )
+
+                if dependency_completed:
+                    logger.info(
+                        f"Dependency '{old_job}' already completed. Skipping."
+                    )
+
+                else:
+                    logger.info(
+                        f"Dependency '{old_job}' not completed. Running first."
+                    )
+
+                    result = await self._resolve_and_run_recursive(
+                        project_name,
+                        protocol,
+                        old_run_number,
+                        progress_callback
+                    )
+
+                    if not result.get("success", False):
+                        return {
+                            "success": False,
+                            "message": (
+                                f"Dependency '{old_job}' failed: "
+                                f"{result.get('message', 'Unknown error')}"
+                            )
+                        }
+
+        # Build folder path
+        folder_name = f"{row_data.get('p', '')}_{row_data.get('l', '')}"
         folder_path = self.file_service.get_project_folder_path(project_name, protocol, folder_name)
-        
-        # Ensure folder exists
         os.makedirs(folder_path, exist_ok=True)
-        
-        # Check if input file exists, if not, try to find it or create from template
+
+        # Ensure input file exists (fallback)
         input_file_path = os.path.join(folder_path, f"{job_name}.inp")
         if not os.path.exists(input_file_path):
-            # Try to copy from templates
+            # Try to copy from template, or create a minimal one
             template_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'templates', 'inp')
             template_path = os.path.join(template_dir, f"{job_name}.inp")
             if os.path.exists(template_path):
@@ -279,65 +284,116 @@ class DependencyResolver:
                 shutil.copy2(template_path, input_file_path)
                 logger.info(f"Copied template input file to {input_file_path}")
             else:
-                # Create empty input file (this is a fallback)
                 with open(input_file_path, 'w') as f:
-                    f.write(f"*HEADING\n** Abaqus Input File for {job_name}\n")
-                    f.write("*END\n")
+                    f.write(f"*HEADING\n** Abaqus Input File for {job_name}\n*END\n")
                 logger.warning(f"Created empty input file at {input_file_path}")
-        
+
+        # Build Abaqus configuration
         abaqus_config = {
             "job_name": job_name,
             "input_file": f"{job_name}.inp",
             "old_job": old_job if old_job and old_job != "-" else None,
             "user_subroutine": user_subroutine if user_subroutine and user_subroutine != "-" else None,
-
             "python_script": row_data.get("python_script"),
             "speed_var": row_data.get("velocity"),
-
             "cpus": self._determine_cpus(row_data),
             "ask_del": "no",
             "abaqus_exe": self._determine_abaqus_exe(row_data, user_subroutine),
             "folder_path": folder_path,
             "run_number": run_number,
         }
-        
-        # Execute the job
-        logger.info(f"Running Abaqus job: {job_name} with config: {abaqus_config}")
-        
+
+        # Set status to running and start the job
+        logger.info(f"Starting Abaqus job: {job_name}")
         if progress_callback:
             await progress_callback(run_number, 'running', 5, f"Running Abaqus: {job_name}")
-        
-        await self._update_run_status(
-            protocol,
-            run_number,
-            "running"
-        )
-        
+
+        await self._update_run_status(protocol, run_number, "running")
+
+        # Start the job (does not wait for completion)
         result = await self._run_job(abaqus_config, progress_callback)
-        
-        # Check if ODB was created
-        if result.get("success"):
-            odb_path = os.path.join(
-                folder_path,
-                f"{job_name}.odb"
-            )
 
-            await self._update_run_status(
-                protocol,
-                run_number,
-                "completed",
-                odb_path=odb_path
-            )
-
-        else:
+        if not result.get("success"):
             await self._update_run_status(
                 protocol,
                 run_number,
                 "failed",
-                error_message=result.get("error") or result.get("stderr")
+                error_message=result.get("error")
             )
+            return result
 
-        return result
+        # Wait until the ODB file actually exists
+        odb_path = os.path.join(folder_path, f"{job_name}.odb")
+
+        timeout = 120   # timeout
+        poll_interval = 2
+        elapsed = 0
+
+        while True:
+
+            if os.path.isfile(odb_path):
+                logger.info(f"{job_name}.odb found")
+                return {"success": True}
+
+            status = await self._get_run_status(protocol, run_number)
+
+            if status == "failed":
+                logger.error(f"{job_name} failed before producing an ODB")
+
+                return {
+                    "success": False,
+                    "message": f"{job_name} failed"
+                }
+
+            if elapsed >= timeout:
+                logger.error(f"Timeout waiting for {job_name}.odb")
+
+                await self._update_run_status(
+                    protocol,
+                    run_number,
+                    "failed",
+                    error_message="Timed out waiting for ODB"
+                )
+
+                return {
+                    "success": False,
+                    "message": "Timed out waiting for ODB"
+                }
+
+            logger.info(f"Waiting for {job_name}.odb...")
+            await asyncio.sleep(poll_interval)
+            elapsed += poll_interval
+
+    async def _get_run_status(self, protocol: str, run_number: int):
+        table = self._get_table_name(protocol)
+
+        row = await db.execute_one(
+            f"""
+            SELECT run_status
+            FROM {table}
+            WHERE number_of_runs=$1
+            """,
+            run_number,
+        )
+
+        return row["run_status"] if row else None
+
+    async def _is_completed(self, protocol: str, run_number: int) -> bool:
+        table = self._get_table_name(protocol)
+
+        row = await db.execute_one(
+            f"""
+            SELECT run_status
+            FROM {table}
+            WHERE number_of_runs=$1
+            """,
+            run_number,
+        )
+
+        if not row:
+            return False
+
+        return row["run_status"] == "completed"
     
     async def _find_run_number_by_job(self, protocol: str, job_name: str) -> Optional[int]:
         """Find the run number for a given job name"""

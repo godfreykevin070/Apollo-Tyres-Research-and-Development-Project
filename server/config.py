@@ -23,6 +23,7 @@ class Config:
     TEMPLATES_DIR = os.path.join(BASE_DIR, 'templates')
     PROJECTS_DIR = os.path.join(BASE_DIR, 'projects')
     PROTOCOL_DIR = os.path.join(BASE_DIR, 'protocol')
+    SAVED_PROJECTS_DIR = os.path.join(BASE_DIR, "Saved_Projects")
     
     # Cors
     CORS_ORIGINS = os.getenv('CORS_ORIGINS', 'http://localhost:3000').split(',')

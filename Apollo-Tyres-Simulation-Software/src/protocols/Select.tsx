@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import api from '../services/api';
-import { 
-  ArrowLeft, 
-  Play, 
-  FileText, 
-  CheckCircle, 
-  Clock, 
+import {
+  ArrowLeft,
+  Play,
+  FileText,
+  CheckCircle,
+  Clock,
   AlertCircle,
   RefreshCw,
   Eye
@@ -31,7 +31,7 @@ const Select: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const projectId = searchParams.get('projectId');
-  
+
   const [runs, setRuns] = useState<RunData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [runningJobs, setRunningJobs] = useState<Set<number>>(new Set());
@@ -59,7 +59,11 @@ const Select: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Error loading runs:', error);
-      setError(error.response?.data?.message || 'Failed to load run data');
+      setError(
+          error.response?.data?.detail ??
+          error.response?.data?.message ??
+          "Failed to start simulation"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -70,7 +74,7 @@ const Select: React.FC = () => {
       const response = await api.get(`/projects/${projectId}/run-status`);
 
       if (response.data.success) {
-        const runStatuses = response.data.runs; 
+        const runStatuses = response.data.runs;
 
         setRuns(prev =>
           prev.map(run => {
@@ -80,15 +84,15 @@ const Select: React.FC = () => {
 
             return latest
               ? {
-                  ...run,
-                  status:
-                    latest.run_status === "not_started"
-                      ? "pending"
-                      : latest.run_status,
-                  run_start_time: latest.run_start_time,
-                  run_end_time: latest.run_end_time,
-                  run_duration_seconds: latest.run_duration_seconds,
-                }
+                ...run,
+                status:
+                (latest.run_status ?? "not_started") === "not_started"
+                    ? "pending"
+                    : latest.run_status,
+                run_start_time: latest.run_start_time,
+                run_end_time: latest.run_end_time,
+                run_duration_seconds: latest.run_duration_seconds,
+              }
               : run;
           })
         );
@@ -109,32 +113,38 @@ const Select: React.FC = () => {
       });
 
       if (response.data.success) {
-        // Update status to running
-        setRuns(prev => prev.map(run => 
-          run.number_of_runs === runNumber 
-            ? { ...run, status: 'running' } 
-            : run
-        ));
-        
-        // Poll for status updates
-        pollRunStatus();
+        setRuns(prev =>
+          prev.map(run =>
+            run.number_of_runs === runNumber
+              ? { ...run, status: "running" }
+              : run
+          )
+        );
+
+        pollRunStatus(runNumber);
       } else {
-        setError(response.data.message || 'Failed to start simulation');
-        setRuns(prev => prev.map(run => 
-          run.number_of_runs === runNumber 
-            ? { ...run, status: 'failed' } 
-            : run
-        ));
+          setError(response.data.message || "Failed to start simulation");
+          setRuns(prev =>
+              prev.map(run =>
+                  run.number_of_runs === runNumber
+                      ? { ...run, status: "failed" }
+                      : run
+              )
+          );
       }
     } catch (error: any) {
       console.log(error.response?.status);
       console.log(error.response?.data);
       console.log(error.response?.headers);
       console.error('Error running simulation:', error);
-      setError(error.response?.data?.message || 'Failed to start simulation');
-      setRuns(prev => prev.map(run => 
-        run.number_of_runs === runNumber 
-          ? { ...run, status: 'failed' } 
+      setError(
+          error.response?.data?.detail ??
+          error.response?.data?.message ??
+          "Failed to start simulation"
+      );
+      setRuns(prev => prev.map(run =>
+        run.number_of_runs === runNumber
+          ? { ...run, status: 'failed' }
           : run
       ));
     } finally {
@@ -146,63 +156,115 @@ const Select: React.FC = () => {
     }
   };
 
-  const pollRunStatus = async () => {
-    const maxAttempts = 60;
-    let attempts = 0;
+  const handleRefresh = async () => {
+    setError('');
+    try {
+      // Call the new refresh-status endpoint
+      await api.post('/refresh-status', { projectId: Number(projectId) });
+      // Then reload the run statuses
+      await loadRunStatuses();
+    } catch (error: any) {
+      console.error('Refresh failed:', error);
+      setError(error.response?.data?.detail || 'Refresh failed');
+    }
+  };
 
-    const poll = async () => {
+  const handleSaveProject = async () => {
+    try {
+      const response = await api.post(`/projects/${projectId}/save`);
+
+      if (response.data.success) {
+        alert("Project saved successfully.");
+      } else {
+        setError(response.data.message || "Failed to save project.");
+      }
+    } catch (error: any) {
+      console.error(error);
+      setError(
+        error.response?.data?.detail ||
+        error.response?.data?.message ||
+        "Failed to save project."
+      );
+    }
+  };
+
+  const handleMarkCompleted = async () => {
+    try {
+      const response = await api.post(`/projects/${projectId}/complete`);
+
+      if (response.data.success) {
+        alert("Project marked as completed.");
+      } else {
+        setError(response.data.message || "Failed to mark project completed.");
+      }
+    } catch (error: any) {
+      console.error(error);
+      setError(
+        error.response?.data?.detail ||
+        error.response?.data?.message ||
+        "Failed to mark project completed."
+      );
+    }
+  };
+
+  const pollRunStatus = (runNumber: number) => {
+    const interval = setInterval(async () => {
       try {
+
         const response = await api.get(
           `/projects/${projectId}/run-status`
         );
 
-        if (response.data.success) {
-          const updatedRuns = response.data.runs;
+        if (!response.data.success)
+          return;
 
-          setRuns(prev =>
-            prev.map(run => {
-              const latest = updatedRuns.find(
-                (r: any) => r.number_of_runs === run.number_of_runs
-              );
+        const updatedRuns = response.data.runs;
 
-              return latest
-                ? {
-                    ...run,
-                    status:
-                      latest.run_status === "not_started"
-                        ? "pending"
-                        : latest.run_status,
-                    run_start_time: latest.run_start_time,
-                    run_end_time: latest.run_end_time,
-                    run_duration_seconds: latest.run_duration_seconds,
-                  }
-                : run;
-            })
-          );
+        setRuns(prev =>
+          prev.map(run => {
 
-          const allFinished = updatedRuns.every(
-            (r: any) =>
-              r.run_status === "completed" ||
-              r.run_status === "failed" ||
-              r.run_status === "not_started"
-          );
+            const latest = updatedRuns.find(
+              (r: any) =>
+                r.number_of_runs === run.number_of_runs
+            );
 
-          if (!allFinished && attempts < maxAttempts) {
-            attempts++;
-            setTimeout(poll, 5000);
-          }
+            if (!latest)
+              return run;
+
+            return {
+              ...run,
+              status:
+                latest.run_status === "not_started"
+                  ? "pending"
+                  : latest.run_status,
+              run_start_time: latest.run_start_time,
+              run_end_time: latest.run_end_time,
+              run_duration_seconds:
+                latest.run_duration_seconds,
+            };
+
+          })
+        );
+
+        const current = updatedRuns.find(
+          (r: any) => r.number_of_runs === runNumber
+        );
+
+        if (
+          current &&
+          (
+            current.run_status === "completed" ||
+            current.run_status === "failed"
+          )
+        ) {
+          clearInterval(interval);
         }
-      } catch (err) {
-        console.error("Polling failed:", err);
 
-        if (attempts < maxAttempts) {
-          attempts++;
-          setTimeout(poll, 5000);
-        }
       }
-    };
-
-    poll();
+      catch (err) {
+        console.error(err);
+      }
+    }, 3000);
   };
 
   const handleGenerateTydex = async (runNumber: number) => {
@@ -219,6 +281,7 @@ const Select: React.FC = () => {
       if (response.data.success) {
         alert('Tydex file generated successfully');
         await loadRunStatuses();
+        pollRunStatus(-1);
       } else {
         setError(response.data.message || 'Failed to generate Tydex');
       }
@@ -281,12 +344,27 @@ const Select: React.FC = () => {
           </div>
           <div className="flex items-center gap-3">
             <button
-              onClick={loadRunStatuses}
+              onClick={handleSaveProject}
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+            >
+              Save Project
+            </button>
+
+            <button
+              onClick={handleMarkCompleted}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+            >
+              Mark Completed
+            </button>
+
+            <button
+              onClick={handleRefresh}
               className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
             >
               <RefreshCw className="w-4 h-4" />
               Refresh
             </button>
+
             <button
               onClick={() => navigate(`/projects/${projectId}`)}
               className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors flex items-center gap-2"

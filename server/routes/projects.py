@@ -7,7 +7,9 @@ import os
 from database import db
 from auth import get_current_user, get_current_manager
 from services.simulation_service import SimulationService
+from services.file_service import FileService
 
+file_service = FileService()
 router = APIRouter()
 
 @router.get("/")
@@ -339,22 +341,41 @@ async def check_project_exists(request: Request, user=Depends(get_current_user))
             "folderName": f"{project_name}_{protocol}"
         }
 
-@router.post("/mark-complete")
-async def mark_project_complete(request: Request, user=Depends(get_current_user)):
-    data = await request.json()
-    project_name = data.get('projectName')
-    
-    if not project_name:
-        raise HTTPException(400, "Project name required")
-    
-    result = await db.execute_one(
-        "UPDATE projects SET status = 'Completed', completed_at = CURRENT_TIMESTAMP WHERE project_name = $1 AND user_email = $2 RETURNING *",
-        project_name, user['email']
+@router.post("/{project_id}/complete")
+async def complete_project(
+    project_id: int,
+    user=Depends(get_current_user)
+):
+    project = await db.execute_one(
+        "SELECT * FROM projects WHERE id=$1",
+        project_id
     )
-    if not result:
+
+    if not project:
         raise HTTPException(404, "Project not found")
-    
-    return {"success": True, "message": "Project marked as completed"}
+
+    if (
+        user["role"] not in ["manager", "admin"]
+        and project["user_email"] != user["email"]
+    ):
+        raise HTTPException(403, "Forbidden")
+
+    await db.execute(
+        """
+        UPDATE projects
+        SET
+            status='Completed',
+            completed_at=CURRENT_TIMESTAMP,
+            updated_at=CURRENT_TIMESTAMP
+        WHERE id=$1
+        """,
+        project_id
+    )
+
+    return {
+        "success": True,
+        "message": "Project marked as completed"
+    }
 
 @router.post("/mark-in-progress")
 async def mark_project_in_progress(request: Request, user=Depends(get_current_user)):
@@ -477,3 +498,27 @@ async def get_protocol_projects(protocol: str, user=Depends(get_current_user)):
         "success": True,
         "projects": [dict(r) for r in rows]
     }
+
+@router.post("/{project_id}/save")
+async def save_project_endpoint(
+    project_id: int,
+    user=Depends(get_current_user)
+):
+    project = await db.execute_one(
+        "SELECT * FROM projects WHERE id=$1",
+        project_id
+    )
+
+    if not project:
+        raise HTTPException(404, "Project not found")
+
+    if (
+        user["role"] not in ["manager", "admin"]
+        and project["user_email"] != user["email"]
+    ):
+        raise HTTPException(403, "Forbidden")
+
+    return file_service.save_project(
+        project["project_name"],
+        project["protocol"]
+    )
