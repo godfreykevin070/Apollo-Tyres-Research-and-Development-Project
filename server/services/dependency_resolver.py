@@ -7,6 +7,7 @@ from pathlib import Path
 from database import db
 from services.abaqus import AbaqusService
 from services.file_service import FileService
+from services.odb_service import ODBService
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +23,7 @@ class DependencyResolver:
     def __init__(self):
         self.abaqus = AbaqusService()
         self.file_service = FileService()
+        self.odb_service = ODBService()
         self._visited = set()
         self.default_exe = os.getenv('ABQ_EXE', 'abaqus')
         self.default_cpus = int(os.getenv('ABQ_CPUS', 1))
@@ -169,17 +171,28 @@ class DependencyResolver:
         5. Execute Abaqus
         6. Return result
         """
-        self._visited = set()  # Reset visited set for each run
-        
-        return await self._resolve_and_run_recursive(
-            project_name, protocol, run_number, progress_callback
+        self._visited = set()
+
+        master_row = await self._get_row_data(protocol, run_number)
+
+        logger.info(
+            f"Using run {run_number} as master parameter source."
         )
-    
+
+        return await self._resolve_and_run_recursive(
+            project_name,
+            protocol,
+            run_number,
+            master_row,
+            progress_callback
+        )
+            
     async def _resolve_and_run_recursive(
         self,
         project_name: str,
         protocol: str,
         run_number: int,
+        master_row: Dict[str, Any],
         progress_callback: Optional[callable] = None
     ) -> Dict[str, Any]:
         """
@@ -256,6 +269,7 @@ class DependencyResolver:
                         project_name,
                         protocol,
                         old_run_number,
+                        master_row,
                         progress_callback
                     )
 
@@ -273,35 +287,101 @@ class DependencyResolver:
         folder_path = self.file_service.get_project_folder_path(project_name, protocol, folder_name)
         os.makedirs(folder_path, exist_ok=True)
 
-        # Ensure input file exists (fallback)
+        # Ensure input file exists
         input_file_path = os.path.join(folder_path, f"{job_name}.inp")
         if not os.path.exists(input_file_path):
-            # Try to copy from template, or create a minimal one
-            template_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'templates', 'inp')
-            template_path = os.path.join(template_dir, f"{job_name}.inp")
-            if os.path.exists(template_path):
-                import shutil
-                shutil.copy2(template_path, input_file_path)
-                logger.info(f"Copied template input file to {input_file_path}")
-            else:
-                with open(input_file_path, 'w') as f:
-                    f.write(f"*HEADING\n** Abaqus Input File for {job_name}\n*END\n")
-                logger.warning(f"Created empty input file at {input_file_path}")
+            logger.error(f"Input file not found: {input_file_path}")
+            await self._update_run_status(
+                protocol,
+                run_number,
+                "failed",
+                error_message=f"Input file not found: {job_name}.inp"
+            )
+            return {
+                "success": False,
+                "message": f"Input file not found: {job_name}.inp"
+            }
 
         # Build Abaqus configuration
         abaqus_config = {
             "job_name": job_name,
             "input_file": f"{job_name}.inp",
+
+            # dependency information still comes from current row
             "old_job": old_job if old_job and old_job != "-" else None,
             "user_subroutine": user_subroutine if user_subroutine and user_subroutine != "-" else None,
+
+            # execution parameters come from master row
             "python_script": row_data.get("python_script"),
-            "speed_var": row_data.get("velocity"),
+            "speed_var": master_row.get("velocity"),
             "cpus": self._determine_cpus(row_data),
             "ask_del": "no",
             "abaqus_exe": self._determine_abaqus_exe(row_data, user_subroutine),
+
             "folder_path": folder_path,
             "run_number": run_number,
         }
+
+        # Run Python Script Before Job
+        python_script = row_data.get("python_script")
+
+        if python_script and python_script.strip() and python_script != "-":
+
+            script_path = os.path.join(
+                os.path.dirname(folder_path),
+                python_script
+            )
+
+            if not os.path.isfile(script_path):
+
+                logger.error(
+                    f"Python script not found: {script_path}"
+                )
+
+                await self._update_run_status(
+                    protocol,
+                    run_number,
+                    "failed",
+                    error_message=f"Python script not found: {python_script}"
+                )
+
+                return {
+                    "success": False,
+                    "message": f"Python script not found: {python_script}"
+                }
+
+            logger.info(
+                f"Running pre-processing script: {python_script}"
+            )
+
+            if old_job:
+                script_odb = os.path.join(folder_path, f"{old_job}.odb")
+            else:
+                script_odb = os.path.join(folder_path, f"{job_name}.odb")
+
+            script_result = self.odb_service.run_python_script(
+                script_path=script_path,
+                odb_path=script_odb,
+                working_dir=folder_path
+            )
+
+            if not script_result["success"]:
+
+                logger.error(
+                    f"Pre-processing script failed: {python_script}"
+                )
+
+                await self._update_run_status(
+                    protocol,
+                    run_number,
+                    "failed",
+                    error_message=script_result["error"]
+                )
+
+                return {
+                    "success": False,
+                    "message": script_result["error"]
+                }
 
         # Set status to running and start the job
         logger.info(f"Starting Abaqus job: {job_name}")
@@ -322,46 +402,117 @@ class DependencyResolver:
             )
             return result
 
-        # Wait until the ODB file actually exists
-        odb_path = os.path.join(folder_path, f"{job_name}.odb")
+        # Wait until ODB is created and readable
+        odb_path = os.path.join(
+            folder_path,
+            f"{job_name}.odb"
+        )
 
-        timeout = 120   # timeout
-        poll_interval = 2
+        timeout = 120
+        poll_interval = 5
         elapsed = 0
 
         while True:
-
+            # Check if ODB file exists
             if os.path.isfile(odb_path):
-                logger.info(f"{job_name}.odb found")
-                return {"success": True}
+                logger.info(f"{job_name}.odb detected. Reading ODB...")
 
-            status = await self._get_run_status(protocol, run_number)
+                try:
+                    odb_content = await asyncio.to_thread(
+                        self.odb_service.read_odb_content,
+                        odb_path
+                    )
 
-            if status == "failed":
-                logger.error(f"{job_name} failed before producing an ODB")
+                    if odb_content.get("success"):
+                        logger.info(
+                            f"{job_name} completed successfully."
+                        )
 
-                return {
-                    "success": False,
-                    "message": f"{job_name} failed"
-                }
+                        await self._update_run_status(
+                            protocol,
+                            run_number,
+                            "completed",
+                            odb_path=odb_path
+                        )
+
+                        return {
+                            "success": True,
+                            "message": "Analysis completed successfully."
+                        }
+
+                    else:
+
+                        logger.error(
+                            f"{job_name} analysis failed."
+                        )
+
+                        await self._update_run_status(
+                            protocol,
+                            run_number,
+                            "failed",
+                            error_message=odb_content.get("status", "Analysis failed")
+                        )
+
+                        if os.path.exists(odb_path):
+                            os.remove(odb_path)
+                            logger.warning(f"Deleted failed ODB: {odb_path}")
+
+                        return {
+                            "success": False,
+                            "message": odb_content.get("status", "Analysis failed")
+                        }
+
+                except Exception as e:
+
+                    logger.error(
+                        f"ODB processing failed: {e}"
+                    )
+
+                    # DELETE INVALID ODB
+                    if os.path.exists(odb_path):
+                        os.remove(odb_path)
+                        logger.warning(
+                            f"Deleted failed ODB: {odb_path}"
+                        )
+
+                    await self._update_run_status(
+                        protocol,
+                        run_number,
+                        "failed",
+                        error_message=str(e)
+                    )
+
+                    return {
+                        "success": False,
+                        "message": str(e)
+                    }
 
             if elapsed >= timeout:
-                logger.error(f"Timeout waiting for {job_name}.odb")
+
+                logger.error(
+                    f"Timeout waiting for valid ODB: {job_name}"
+                )
 
                 await self._update_run_status(
                     protocol,
                     run_number,
                     "failed",
-                    error_message="Timed out waiting for ODB"
+                    error_message="Timed out waiting for valid ODB"
                 )
 
                 return {
                     "success": False,
-                    "message": "Timed out waiting for ODB"
+                    "message": "Timed out waiting for valid ODB"
                 }
 
-            logger.info(f"Waiting for {job_name}.odb...")
-            await asyncio.sleep(poll_interval)
+            logger.info(
+                f"Waiting for valid {job_name}.odb..."
+            )
+
+            await asyncio.sleep(
+                poll_interval
+            )
+
             elapsed += poll_interval
 
     async def _get_run_status(self, protocol: str, run_number: int):

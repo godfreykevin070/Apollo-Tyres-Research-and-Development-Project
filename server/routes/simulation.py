@@ -1,19 +1,15 @@
 from fastapi import APIRouter, HTTPException, Depends, Request
-from fastapi.responses import JSONResponse
 import asyncio
 import os
-import subprocess
 from typing import Optional
-import json
 
 import logging
 from database import db
 from auth import get_current_user
 from services.abaqus import AbaqusService
 from services.dependency_resolver import DependencyResolver
-from services.simulation_service import SimulationService
 from services.file_service import FileService
-
+from services.odb_service import ODBService
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -251,7 +247,6 @@ async def record_run_time(request: Request, user=Depends(get_current_user)):
 @router.post("/stop-all")
 async def stop_all(user=Depends(get_current_user)):
     """Stop all running simulations"""
-    from services.abaqus import AbaqusService
     abaqus = AbaqusService()
     result = abaqus.stop_all()
     return result
@@ -314,7 +309,7 @@ async def refresh_status(
     Refresh the status of all running simulations for a project.
     For each row with run_status = 'running':
       - Check if the ODB file exists.
-      - If yes, run the associated Python post‑processing script (if any),
+      - If yes, run the associated Python post-processing script (if any),
         then mark the run as 'completed' (or 'failed' if the script fails).
       - If not, leave it as 'running' (the refresh will check again later).
     """
@@ -356,7 +351,7 @@ async def refresh_status(
     )
 
     file_service = FileService()
-    abaqus_service = AbaqusService()
+    odb_service = ODBService()
     updated_count = 0
 
     for row in rows:
@@ -374,52 +369,33 @@ async def refresh_status(
 
         # Check if ODB exists
         if os.path.isfile(odb_path):
-            # ODB is present → run post‑processing if a Python script is defined
-            python_script = row.get("python_script")
-            if python_script and python_script.strip():
-                try:
-                    # Build and execute the Python script (same logic as originally in AbaqusService)
-                    project_root = os.path.dirname(folder_path)
-                    script_path = os.path.join(project_root, python_script)
-                    if os.path.isfile(script_path):
-                        speed_var = row.get("velocity", "Vel")  # adjust default as needed
-                        python_cmd = [
-                            os.getenv('ABQ_EXE', 'abaqus'),
-                            "python",
-                            script_path,
-                            odb_path,
-                            speed_var
-                        ]
-                        logger.info(f"Running post‑processing: {' '.join(python_cmd)}")
-                        subprocess.run(
-                            python_cmd,
-                            cwd=folder_path,
-                            check=True,
-                            capture_output=True,
-                            text=True
-                        )
-                    else:
-                        logger.warning(f"Python script not found: {script_path}")
-                except Exception as e:
-                    logger.error(f"Post-processing failed for run {run_number}: {e}")
-                    # Mark as failed if post‑processing fails? Decide based on requirements.
-                    # For now, we still mark as completed but log the error.
-                    # Optionally you could set status to 'failed' here.
-                    # We'll proceed to mark completed anyway because ODB exists.
 
-            # Update row to 'completed'
-            await db.execute(
-                f"""
-                UPDATE {table_name}
-                SET run_status = 'completed',
-                    run_end_time = CURRENT_TIMESTAMP,
-                    odb_path = $1
-                WHERE number_of_runs = $2
-                """,
-                odb_path,
-                run_number
-            )
-            updated_count += 1
+            # Validate the ODB instead of assuming completion
+            odb_result = odb_service.read_odb_content(odb_path)
+
+            if odb_result["success"]:
+
+                await db.execute(
+                    f"""
+                    UPDATE {table_name}
+                    SET run_status='completed',
+                        run_end_time=CURRENT_TIMESTAMP,
+                        odb_path=$1
+                    WHERE number_of_runs=$2
+                    """,
+                    odb_path,
+                    run_number
+                )
+
+                updated_count += 1
+
+            else:
+                logger.info(
+                    f"{job_name} ODB exists but is still being written."
+                )
+
+                # Leave status as RUNNING
+                continue
         else:
             # ODB not yet present – leave as 'running'
             # Optionally, you could check if the process is still alive and mark as failed if dead

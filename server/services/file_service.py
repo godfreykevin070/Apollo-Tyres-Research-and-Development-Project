@@ -285,11 +285,9 @@ class FileService:
                 f"Project folder not found: {source}"
             )
 
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-
         destination = os.path.join(
             config.SAVED_PROJECTS_DIR,
-            f"{project_name}_{protocol}_{timestamp}"
+            f"{project_name}_{protocol}"
         )
 
         shutil.copytree(source, destination)

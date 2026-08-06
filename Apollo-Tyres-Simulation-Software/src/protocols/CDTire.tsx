@@ -186,7 +186,7 @@ const CDTire: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 px-6 py-4">
+      <header className="sticky top-0 z-50 bg-white border-b border-gray-200 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
@@ -250,29 +250,6 @@ const CDTire: React.FC = () => {
                 </div>
               </div>
             ))}
-
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Mesh File</h3>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                <input
-                  type="file"
-                  id="meshFile"
-                  accept=".inp"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-                <label
-                  htmlFor="meshFile"
-                  className="cursor-pointer flex flex-col items-center gap-2"
-                >
-                  <Upload className="w-8 h-8 text-gray-400" />
-                  <span className="text-sm text-gray-600">
-                    {meshFile ? meshFile.name : 'Click to upload mesh file (.inp)'}
-                  </span>
-                  <span className="text-xs text-gray-400">Drag and drop or click to browse</span>
-                </label>
-              </div>
-            </div>
           </div>
 
           <div className="lg:col-span-1">
@@ -303,6 +280,28 @@ const CDTire: React.FC = () => {
                 >
                   Apply Saved Inputs
                 </button>
+              </div>
+            </div>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Mesh File</h3>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                <input
+                  type="file"
+                  id="meshFile"
+                  accept=".inp"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+                <label
+                  htmlFor="meshFile"
+                  className="cursor-pointer flex flex-col items-center gap-2"
+                >
+                  <Upload className="w-8 h-8 text-gray-400" />
+                  <span className="text-sm text-gray-600">
+                    {meshFile ? meshFile.name : 'Click to upload mesh file (.inp)'}
+                  </span>
+                  <span className="text-xs text-gray-400">Drag and drop or click to browse</span>
+                </label>
               </div>
             </div>
           </div>
